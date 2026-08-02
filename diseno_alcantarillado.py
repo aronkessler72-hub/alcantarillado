@@ -44,7 +44,7 @@ st.markdown("""
 </style>
 <div class="header-box">
     <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CALCULO HIDRAULICO DINAMICO COMPLETO</div>
+    <div class="header-subtitle">CALCULO HIDRAULICO DINAMICO COMPLETO (PRECISION 4 DECIMALES)</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -65,10 +65,10 @@ def generar_300_tramos():
             c_de = int(camara_inicio + (t_index - 1))
             c_a = int(c_de + 1)
             
-            cota_t_de = round(3830.00 - (t_index * 0.45) - (num_colector * 0.10), 2)
-            cota_t_a = round(3830.00 - ((t_index + 1) * 0.45) - (num_colector * 0.10), 2)
-            cota_f_de = round(cota_t_de - 1.20, 2)
-            cota_f_a = round(cota_t_a - 1.20, 2)
+            cota_t_de = round(3830.00 - (t_index * 0.45) - (num_colector * 0.10), 4)
+            cota_t_a = round(3830.00 - ((t_index + 1) * 0.45) - (num_colector * 0.10), 4)
+            cota_f_de = round(cota_t_de - 1.20, 4)
+            cota_f_a = round(cota_t_a - 1.20, 4)
             
             tramos.append({
                 "COLECTOR": colector_tag,
@@ -121,38 +121,83 @@ tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
 ])
 
 # =============================================================================
-# PESTANA 1: PARAMETROS GENERALES
+# PESTANA 1: PARAMETROS GENERALES DINAMICOS
 # =============================================================================
 with tab_param:
-    st.subheader("PARAMETROS GENERALES DE DISENO")
+    st.subheader("PARAMETROS GENERALES DE DISENO Y CAUDAL UNITARIO")
+    
     col_p1, col_p2 = st.columns(2)
     
     with col_p1:
-        periodo = st.number_input("Periodo de diseno (anos)", value=15)
-        pob_actual = st.number_input("Poblacion actual (hab)", value=4804)
-        pob_futura = st.number_input("Poblacion futura (hab)", value=7286)
-        qmh = st.number_input("Caudal maximo horario Qmh (L/s)", value=42.16, format="%.2f")
-        coef_retorno = st.number_input("Coeficiente de retorno (%)", value=80.0) / 100.0
-        coef_erradas = st.number_input("Coeficiente conexiones erradas (%)", value=15.0) / 100.0
-        coef_infilt = st.number_input("Coeficiente de infiltracion (L/s/m)", value=0.0001, format="%.4f")
-        long_total = st.number_input("Longitud total de red (m)", value=19800.00, format="%.2f")
-
-    q_retorno = qmh * coef_retorno
-    q_erradas = q_retorno * coef_erradas
-    q_infilt = coef_infilt * long_total
-    q_total = q_retorno + q_erradas + q_infilt
-    q_unitario = q_total / long_total if long_total > 0 else 0.0
+        st.markdown("##### 📌 Datos Poblanos y Básicos")
+        periodo = st.number_input("Periodo de diseño (años)", value=15)
+        pob_actual = st.number_input("Población actual (hab)", value=4804)
+        pob_futura = st.number_input("Población futura (hab)", value=7286)
+        qmh = st.number_input("Caudal máximo horario Qmh (L/s)", value=42.16, format="%.4f")
+        coef_retorno = st.number_input("Coeficiente de retorno (%)", value=80.0, format="%.2f") / 100.0
+        long_total = st.number_input("Longitud total de la red (m)", value=19800.00, format="%.2f")
+        
+        st.markdown("---")
+        st.markdown("##### ⚠️ 1. Selección de Conexiones Erradas ($Q_{CE}$)")
+        cultura_sanitaria = st.selectbox(
+            "Cultura Sanitaria de la Población:",
+            ["Alta Cultura Sanitaria (5%)", "Media Cultura Sanitaria (7.5%)", "Baja / Nula Cultura Sanitaria (10%)", "Personalizado"]
+        )
+        
+        if "Alta" in cultura_sanitaria:
+            pct_erradas = 5.0
+        elif "Media" in cultura_sanitaria:
+            pct_erradas = 7.5
+        elif "Baja" in cultura_sanitaria:
+            pct_erradas = 10.0
+        else:
+            pct_erradas = st.number_input("Porcentaje de Conexiones Erradas (%)", value=8.0, min_value=0.0, max_value=20.0, format="%.2f")
+            
+        coef_erradas = pct_erradas / 100.0
 
     with col_p2:
+        st.markdown("##### 💧 2. Selección de Infiltración Lineal ($q_{inf}$)")
+        
+        nivel_freatico = st.selectbox("Nivel Freático en el área:", ["Ausente / Bajo (Por debajo del colector)", "Alto (Colector bajo agua subterránea)"])
+        material_tub = st.selectbox("Material de Tubería y Junta:", ["PVC / Plástico con anillo de goma (Estanco)", "Hormigón / Concreto rígido", "Personalizado"])
+        calidad_const = st.selectbox("Calidad de Construcción / Estanqueidad de BZ:", ["Buena / Estanca", "Regular", "Deficiente"])
+        
+        # Lógica de sugerencia de q_inf
+        if "PVC" in material_tub:
+            q_base = 0.00005 if "Ausente" in nivel_freatico else 0.00010
+        elif "Hormigón" in material_tub:
+            q_base = 0.00015 if "Ausente" in nivel_freatico else 0.00030
+        else:
+            q_base = 0.00010
+            
+        if "Deficiente" in calidad_const:
+            q_base *= 1.25
+            
+        if material_tub == "Personalizado":
+            coef_infilt = st.number_input("Coeficiente de Infiltración Lineal (L/s/m)", value=0.0001, format="%.5f")
+        else:
+            coef_infilt = st.number_input("Coeficiente de Infiltración Lineal Asignado (L/s/m)", value=q_base, format="%.5f")
+
+        st.markdown("---")
         st.markdown("### RESULTADOS DE CAUDALES GLOBALES")
+        
+        q_retorno = qmh * coef_retorno
+        q_erradas = q_retorno * coef_erradas
+        q_infilt = coef_infilt * long_total
+        q_total = q_retorno + q_erradas + q_infilt
+        q_unitario = q_total / long_total if long_total > 0 else 0.0
+
         df_params = pd.DataFrame([
-            {"PARAMETRO": "CAUDAL TOTAL ALCANTARILLADO", "UNIDAD": "L/s", "VALOR": f"{q_total:.2f}"},
-            {"PARAMETRO": "CAUDAL UNITARIO DE CIRCULACION", "UNIDAD": "L/s/m", "VALOR": f"{q_unitario:.4f}"}
+            {"PARAMETRO": "Caudal por Retorno (L/s)", "VALOR": f"{q_retorno:.4f}"},
+            {"PARAMETRO": "Caudal Conexiones Erradas (L/s)", "VALOR": f"{q_erradas:.4f} ({pct_erradas:.1f}%)"},
+            {"PARAMETRO": "Caudal por Infiltración Total (L/s)", "VALOR": f"{q_infilt:.4f}"},
+            {"PARAMETRO": "CAUDAL TOTAL DE DISEÑO QDIS (L/s)", "VALOR": f"{q_total:.4f}"},
+            {"PARAMETRO": "CAUDAL UNITARIO DE CIRCULACION qu (L/s/m)", "VALOR": f"{q_unitario:.4f}"}
         ])
         st.dataframe(df_params, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# FUNCION CON FORMULAS Y FORMATO DE 2 DECIMALES
+# FUNCION CON FORMULAS Y FORMATO DE 4 DECIMALES EXACTOS
 # =============================================================================
 def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_acum, q_inicio_anterior):
     l_propia = float(row['Long_m'])
@@ -222,7 +267,7 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     # Tensión tractiva tau = 9810 * R * S
     tau = 9810.0 * r_hid * S
     
-    # Validaciones exactas requeridas
+    # Validaciones exactas
     cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else "NO CUMPLE"
     cumple_tau = "CUMPLE" if tau >= 1.00 else "NO CUMPLE"
     
@@ -231,30 +276,30 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
         "CAMARA DE": row['DE'],
         "CAMARA A": row['A'],
         "NOMBRE ID": row['TRAMO_ID'],
-        "LONGITUD TRIBUTARIA PROPIA (m)": f"{l_propia:.2f}",
-        "LONG TRIBUTARIA ACUMULADA (m)": f"{long_acum:.2f}",
-        "MAXIMA AGUA RESIDUAL (Q_unit)": f"{q_unit:.2f}",
-        "AGUA RESIDUAL PROPIA (L/s)": f"{q_res_propio:.2f}",
-        "AGUA RESIDUAL ACUMULADA (L/s)": f"{q_res_acum:.2f}",
-        "CONEXIONES ERRADAS PROPIA (L/s)": f"{q_err_propio:.2f}",
-        "CONEXIONES ERRADAS ACUMULADO (L/s)": f"{q_err_acum:.2f}",
-        "INFILTRACION PROPIO (L/s)": f"{q_inf_propio:.2f}",
-        "INFILTRACION ACUMULADO (L/s)": f"{q_inf_acum:.2f}",
-        "CAUDAL TOTAL (L/s)": f"{q_diseno_ls:.2f}",
-        "Qi (L/s)": f"{q_i_ls:.2f}",
-        "Qf (L/s)": f"{q_f_ls:.2f}",
-        "COTA FONDO INICIAL (m)": f"{c_f_de:.2f}",
-        "COTA FONDO FINAL (m)": f"{c_f_a:.2f}",
-        "PENDIENTE (m/m)": f"{S:.2f}",
-        "DIAMETRO CALCULADO (m)": f"{D_calc:.2f}",
-        "DIAMETRO COMERCIAL INTERIOR (m)": f"{D_com:.2f}",
-        "CAPACIDAD AL 75% (L/s)": f"{(Q_75 * 1000.0):.2f}",
-        "VELOCIDAD AL 75% (m/s)": f"{V_75:.2f}",
-        "TIRANTE (m)": f"{tirante:.2f}",
-        "RELACION Y/D": f"{relacion_y_D:.2f}",
-        "VELOCIDAD REAL (m/s)": f"{v_real:.2f}",
-        "RADIO HIDRAULICO REAL (m)": f"{r_hid:.2f}",
-        "TENSION TRACTIVA (Pa)": f"{tau:.2f}",
+        "LONGITUD TRIBUTARIA PROPIA (m)": f"{l_propia:.4f}",
+        "LONG TRIBUTARIA ACUMULADA (m)": f"{long_acum:.4f}",
+        "MAXIMA AGUA RESIDUAL (Q_unit)": f"{q_unit:.4f}",
+        "AGUA RESIDUAL PROPIA (L/s)": f"{q_res_propio:.4f}",
+        "AGUA RESIDUAL ACUMULADA (L/s)": f"{q_res_acum:.4f}",
+        "CONEXIONES ERRADAS PROPIA (L/s)": f"{q_err_propio:.4f}",
+        "CONEXIONES ERRADAS ACUMULADO (L/s)": f"{q_err_acum:.4f}",
+        "INFILTRACION PROPIO (L/s)": f"{q_inf_propio:.4f}",
+        "INFILTRACION ACUMULADO (L/s)": f"{q_inf_acum:.4f}",
+        "CAUDAL TOTAL (L/s)": f"{q_diseno_ls:.4f}",
+        "Qi (L/s)": f"{q_i_ls:.4f}",
+        "Qf (L/s)": f"{q_f_ls:.4f}",
+        "COTA FONDO INICIAL (m)": f"{c_f_de:.4f}",
+        "COTA FONDO FINAL (m)": f"{c_f_a:.4f}",
+        "PENDIENTE (m/m)": f"{S:.4f}",
+        "DIAMETRO CALCULADO (m)": f"{D_calc:.4f}",
+        "DIAMETRO COMERCIAL INTERIOR (m)": f"{D_com:.4f}",
+        "CAPACIDAD AL 75% (L/s)": f"{(Q_75 * 1000.0):.4f}",
+        "VELOCIDAD AL 75% (m/s)": f"{V_75:.4f}",
+        "TIRANTE (m)": f"{tirante:.4f}",
+        "RELACION Y/D": f"{relacion_y_D:.4f}",
+        "VELOCIDAD REAL (m/s)": f"{v_real:.4f}",
+        "RADIO HIDRAULICO REAL (m)": f"{r_hid:.4f}",
+        "TENSION TRACTIVA (Pa)": f"{tau:.4f}",
         "VALIDACION VELOCIDAD": cumple_v,
         "VALIDACION TENSION TRACTIVA": cumple_tau,
         # Variables numéricas internas para gráfica
@@ -409,7 +454,7 @@ with tab_seccion:
             ))
 
         fig_pipe.update_layout(
-            title=f"Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.2f} m)",
+            title=f"Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.4f} m)",
             xaxis=dict(range=[-R*1.2, R*1.2], constrain='domain', visible=False),
             yaxis=dict(range=[-R*0.2, D_val*1.2], scaleanchor="x", scaleratio=1, visible=False),
             height=400,
