@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Diseño Hidráulico de Redes de Alcantarillado Sanitario
-Basado en el criterio de Tensión Tractiva y la fórmula de Manning.
+Integra la formulación solver de la planilla Excel con la validación normativa de Python.
 """
 
 import numpy as np
@@ -9,110 +9,150 @@ import pandas as pd
 from scipy.optimize import fsolve
 
 # ==========================================
-# 1. PARÁMETROS GENERALES (Constantes de Norma)
+# 1. PARÁMETROS GENERALES Y CONSTANTES DE NORMA
 # ==========================================
-N_MANNING = 0.013      # Coeficiente de rugosidad para tuberías de PVC
+N_MANNING = 0.013      # Coeficiente de rugosidad para PVC
 G = 9.81               # Aceleración de la gravedad (m/s²)
 GAMMA_AGUA = 9810      # Peso específico del agua (N/m³)
-D_MIN = 0.160          # Diámetro mínimo normado: 160mm o 6 pulgadas (en metros)
-TAU_MIN = 1.0          # Tensión tractiva mínima admisible (1.0 Pascal) para autolimpieza
-H_D_MAX = 0.75         # Relación de tirante máximo permitido (75% del diámetro)
+RHO_AGUA = 1000        # Densidad del agua (kg/m³)
+D_MIN = 0.1536         # Diámetro interno estándar mínimo (~160mm exterior / SN4)
+TAU_MIN = 1.0          # Tensión tractiva mínima admisible (Pa)
+H_D_MAX = 0.75         # Tirante máximo permitido (75% del diámetro)
+
+# Tabla de diámetros comerciales (mm nominal -> m interno SN4 / Serie 20)
+TABLA_DIAMETROS = {
+    110: 0.1036,
+    160: 0.1520,
+    200: 0.1902,
+    250: 0.2376,
+    315: 0.2996,
+    355: 0.3376,
+    400: 0.3804,
+    450: 0.4280,
+    500: 0.4754,
+    630: 0.5992
+}
 
 # ==========================================
 # 2. FUNCIONES HIDRÁULICAS CORE
 # ==========================================
 
-def calcular_seccion_llena(D, S, n):
+def solver_funcion_k(theta, K_target):
     """
-    Calcula las capacidades de la tubería trabajando al 100% (Sección Llena)
-    usando la ecuación de Manning.
+    Función solver usada en tu hoja de Excel:
+    ((theta - sen(theta))^5) / (theta^2) - K_target = 0
     """
-    # Caudal a sección llena (m³/s)
-    Q_0 = (0.312 / n) * (D ** (8/3)) * (S ** 0.5)
-    # Velocidad a sección llena (m/s)
-    V_0 = (0.397 / n) * (D ** (2/3)) * (S ** 0.5)
-    return Q_0, V_0
+    if theta <= 0:
+        return 1e6
+    return (((theta - np.sin(theta))**5) / (theta**2)) - K_target
 
-def ecuacion_theta(theta, Q_dis, Q_0):
+def calcular_angulo_theta(D, Q, S, n=N_MANNING):
     """
-    Ecuación implícita de relación de caudales parcial/lleno.
-    Se usa para hallar el ángulo central 'theta' mediante métodos numéricos.
+    Calcula el valor de 'K' de Manning y resuelve el ángulo central theta (rad).
     """
-    # Expresión geométrica deducida de las ecuaciones de flujo en canales circulares
-    return (1 - np.sin(theta)/theta)**(5/3) / (1 + np.sin(theta/2))**(2/3) - (Q_dis / Q_0)
+    if Q <= 0 or S <= 0 or D <= 0:
+        return 0.0, 0.0
 
-def procesar_tramo(row):
+    # Constante K exacta del modelo Excel
+    # K = (n * Q) / (S^0.5 * D^(8/3))
+    K_manning = (n * Q) / (np.sqrt(S) * (D ** (8/3)))
+    
+    # Resolver theta partiendo de pi
+    theta_sol = fsolve(solver_funcion_k, x0=np.pi, args=(K_manning,))[0]
+    
+    return K_manning, theta_sol
+
+def procesar_tramo_hidraulico(row):
     """
-    Realiza las verificaciones hidráulicas para un tramo individual de la red.
+    Procesa un tramo completo calculando geometría, hidráulica y validaciones normativas.
     """
-    # 1. Recuperar datos de entrada del tramo
-    Q_dis = row['Q_dis_m3s']
+    # 1. Recuperar entradas
+    tramo_id = f"{row['Cámara_DE']}-{row['Cámara_A']}"
+    longitud = row['Longitud_m']
+    Q_dis_m3s = row['Q_dis_m3s']
     S = row['Pendiente_m_m']
-    D = D_MIN # Iniciamos con el diámetro mínimo normado
+    D = row.get('Diametro_m', D_MIN)
     
-    # 2. Calcular propiedades a sección llena
-    Q_0, V_0 = calcular_seccion_llena(D, S, N_MANNING)
+    # 2. Solución del ángulo Theta y K
+    K_calc, theta = calcular_angulo_theta(D, Q_dis_m3s, S, N_MANNING)
     
-    # Verificación rápida: si el caudal de diseño supera al de sección llena
-    if Q_dis >= Q_0:
-        return pd.Series([D, Q_0, np.nan, np.nan, np.nan, "ERROR: Diámetro insuficiente para el caudal"])
+    if theta <= 0 or np.isnan(theta):
+        return pd.Series([tramo_id, D, 0, 0, 0, 0, 0, 0, 0, 0, "ERROR EN SOLVER"])
+
+    # 3. Propiedades hidráulicas a sección parcialmente llena
+    area_mojada = (D**2 / 8.0) * (theta - np.sin(theta))
+    perimetro_mojado = (D / 2.0) * theta
+    radio_hidraulico = area_mojada / perimetro_mojado if perimetro_mojado > 0 else 0
     
-    # 3. Resolver el ángulo Theta para sección parcialmente llena
-    # fsolve busca el valor de theta (empezando en pi) que hace cero la ecuación
-    theta_inicial = np.pi
-    theta_sol = fsolve(ecuacion_theta, theta_inicial, args=(Q_dis, Q_0))[0]
+    velocidad = Q_dis_m3s / area_mojada if area_mojada > 0 else 0
+    tirante_y = (D / 2.0) * (1.0 - np.cos(theta / 2.0))
+    espejo_agua_T = D * np.sin(theta / 2.0)
     
-    # 4. Calcular parámetros en sección parcial usando el ángulo Theta obtenido
-    # Relación de tirante (h/D)
-    h_D = 0.5 * (1 - np.cos(theta_sol / 2))
+    # Relación Tirante/Diámetro (y/D)
+    h_D = tirante_y / D
     
-    # Radio Hidráulico parcial (R_H)
-    R_H = (D / 4) * (1 - np.sin(theta_sol) / theta_sol)
+    # Número de Froude
+    prof_hidraulica = area_mojada / espejo_agua_T if espejo_agua_T > 0 else 1
+    froude = velocidad / np.sqrt(G * prof_hidraulica)
     
-    # Velocidad real del flujo (V_real)
-    V_real = V_0 * (1 - np.sin(theta_sol)/theta_sol)**(2/3)
+    # Tensión Tractiva (Pa)
+    tau = GAMMA_AGUA * radio_hidraulico * S
     
-    # Tensión Tractiva Real (Tau) en Pascales
-    tau = GAMMA_AGUA * R_H * S
-    
-    # 5. Evaluar si cumple con los criterios normativos
+    # 4. Validaciones de Norma
     cumple_h = h_D <= H_D_MAX
     cumple_tau = tau >= TAU_MIN
     
     if cumple_h and cumple_tau:
-        estado = "CUMPLE NORMA"
+        estado = "OK"
     else:
         alertas = []
-        if not cumple_h: alertas.append(f"Alerta h/D (> {H_D_MAX})")
-        if not cumple_tau: alertas.append(f"Alerta Autolimpieza (< {TAU_MIN} Pa)")
-        estado = " REVISAR: " + " y ".join(alertas)
-        
-    return pd.Series([D, Q_0, h_D, V_real, tau, estado])
+        if not cumple_h: alertas.append(f"h/D>{H_D_MAX*100}%")
+        if not cumple_tau: alertas.append(f"Tau<{TAU_MIN}Pa")
+        estado = "REVISAR: " + " & ".join(alertas)
+
+    return pd.Series({
+        'Tramo': tramo_id,
+        'Longitud (m)': longitud,
+        'Pendiente (m/m)': S,
+        'Q_Diseño (m3/s)': Q_dis_m3s,
+        'Diámetro (m)': D,
+        'K Solver': round(K_calc, 4),
+        'Ángulo (rad)': round(theta, 4),
+        'Área Mojada (m2)': round(area_mojada, 4),
+        'Perímetro (m)': round(perimetro_mojado, 4),
+        'R. Hidráulico (m)': round(radio_hidraulico, 4),
+        'Velocidad (m/s)': round(velocidad, 3),
+        'Tirante (m)': round(tirante_y, 4),
+        'Espejo Agua (m)': round(espejo_agua_T, 4),
+        'Froude': round(froude, 3),
+        'Tensión Tractiva (Pa)': round(tau, 2),
+        'Estado Norma': estado
+    })
 
 # ==========================================
-# 3. EJECUCIÓN PRINCIPAL Y ENTRADA DE DATOS
+# 3. EJECUCIÓN Y DATOS DE ENTRADA (PLANILLA)
 # ==========================================
 if __name__ == "__main__":
-    print("Iniciando cálculo hidráulico de la red de alcantarillado...")
+    print("=========================================================")
+    print("   DISEÑO HIDRÁULICO DE ALCANTARILLADO - PLANILLA EXCEL")
+    print("=========================================================\n")
 
-    # Datos iniciales recopilados del diseño geométrico en campo
-    # Caudales en m3/s (puedes calcularlos previamente multiplicando área por caudal unitario)
+    # Tramos del proyecto extraídos de tu capturas
     datos_tramos = [
-        {"Tramo": "Buzón 1 - Buzón 2", "Q_dis_m3s": 0.0015, "Pendiente_m_m": 0.012},
-        {"Tramo": "Buzón 2 - Buzón 3", "Q_dis_m3s": 0.0032, "Pendiente_m_m": 0.008},
-        {"Tramo": "Buzón 4 - Buzón 2", "Q_dis_m3s": 0.0009, "Pendiente_m_m": 0.005}  # Pendiente baja a propósito
+        {"Cámara_DE": 35, "Cámara_A": 48, "Longitud_m": 66.0, "Q_dis_m3s": 0.0015, "Pendiente_m_m": 0.0130, "Diametro_m": 0.1536},
+        {"Cámara_DE": 48, "Cámara_A": 49, "Longitud_m": 66.0, "Q_dis_m3s": 0.0015, "Pendiente_m_m": 0.0109, "Diametro_m": 0.1536},
+        {"Cámara_DE": 49, "Cámara_A": 50, "Longitud_m": 66.0, "Q_dis_m3s": 0.0015, "Pendiente_m_m": 0.0156, "Diametro_m": 0.1536},
+        {"Cámara_DE": 42, "Cámara_A": 43, "Longitud_m": 56.0, "Q_dis_m3s": 0.0129, "Pendiente_m_m": 0.0102, "Diametro_m": 0.1536},
+        {"Cámara_DE": 43, "Cámara_A": 44, "Longitud_m": 56.0, "Q_dis_m3s": 0.0129, "Pendiente_m_m": 0.0104, "Diametro_m": 0.1536}
     ]
     
-    # Convertimos los datos a una tabla de Pandas (DataFrame)
-    df_red = pd.DataFrame(datos_tramos)
+    # Crear DataFrame
+    df_tramos = pd.DataFrame(datos_tramos)
     
-    # Aplicamos nuestros cálculos fila por fila (tramo por tramo)
-    columnas_resultado = ['D_propuesto_m', 'Q_lleno_m3s', 'Relacion_h_D', 'V_real_m_s', 'Tau_Pa', 'Validacion']
-    df_red[columnas_resultado] = df_red.apply(procesar_tramo, axis=1)
+    # Aplicar el procesador a cada tramo
+    df_resultados = df_tramos.apply(procesar_tramo_hidraulico, axis=1)
     
-    # Imprimir los resultados en la terminal de forma ordenada
-    print("\n=== REPORTE FINAL DE DISEÑO HIDRÁULICO ===")
-    print(df_red.to_string(index=False))
-    
-    # Opcional: Descomenta la línea de abajo si quieres generar un Excel automático
-    # df_red.to_excel("Planilla_Diseno_Resultados.xlsx", index=False)
+    # Mostrar reporte
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', 1000)
+    print(df_resultados.to_string(index=False))
