@@ -15,10 +15,23 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Consolas&family=Roboto+Mono:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Consolas&family=Roboto+Mono:wght@500;700&display=swap');
     
-    html, body, [class*="css"], div, span, label, input, button, table {
+    /* 1. Forzar tipografía en todo el cuerpo del DOM de Streamlit */
+    html, body, [class*="st-"], [class*="css"], div, span, p, label, input, button, table, td, th {
         font-family: 'Consolas', 'Roboto Mono', 'Courier New', monospace !important;
+    }
+    
+    /* 2. Forzar tipografía específica dentro de las tablas de datos (st.dataframe) */
+    [data-testid="stDataFrame"] *, 
+    [data-testid="stTable"] *,
+    div[role="gridcell"], 
+    div[role="columnheader"] {
+        font-family: 'Consolas', 'Roboto Mono', 'Courier New', monospace !important;
+    }
+
+    /* 3. Ajuste de peso negrita opcional para los valores */
+    div[role="gridcell"] {
         font-weight: 700 !important;
     }
 </style>
