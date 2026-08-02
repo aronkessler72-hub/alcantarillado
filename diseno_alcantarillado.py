@@ -152,7 +152,7 @@ with tab_param:
         st.dataframe(df_params, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# FUNCION PARA CALCULAR LA HIDRAULICA DETALLADA CON TODAS LAS COLUMNAS
+# FUNCION CON FORMULAS Y FORMATO DE 2 DECIMALES
 # =============================================================================
 def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_acum, q_inicio_anterior):
     l_propia = float(row['Long_m'])
@@ -185,10 +185,10 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     S = (c_f_de - c_f_a) / l_propia if l_propia > 0 else 0.001
     n = float(row['Manning_n'])
     
-    # Diámetro calculado teórico (m)
+    # Diámetro calculado teórico D_calc = ((0.312 * S^0.5) / (Q * n))^-0.375
     D_calc = float(( (q_diseno_m3s * n) / (0.312 * np.sqrt(S)) ) ** (3/8)) if S > 0 else 0.1000
     
-    # Diámetro comercial interior seleccionado (desplegable)
+    # Diámetro comercial interior seleccionado
     D_com = float(row['D_comercial_m'])
     
     # Capacidad a sección llena y al 75%
@@ -197,9 +197,9 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     Q_lleno = (1.0 / n) * A_llena * (RH_lleno ** (2/3)) * np.sqrt(S)
     
     Q_75 = 0.75 * Q_lleno
-    V_75 = (1.0 / n) * (RH_lleno ** (2/3)) * np.sqrt(S) # aprox o real al 75%
+    V_75 = (1.0 / n) * (RH_lleno ** (2/3)) * np.sqrt(S)
     
-    # Solver de Manning para sección parcial
+    # Solver de Manning para sección parcial (Ángulo theta)
     K = (n * q_diseno_m3s) / (np.sqrt(S) * (D_com ** (8/3))) if (S > 0 and D_com > 0) else 0.01
     
     def func_solver(theta):
@@ -219,58 +219,58 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     tirante = (D_com / 2.0) * (1.0 - np.cos(theta_sol / 2.0))
     relacion_y_D = tirante / D_com if D_com > 0 else 0.0
     
+    # Tensión tractiva tau = 9810 * R * S
     tau = 9810.0 * r_hid * S
     
-    cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else ("NO CUMPLE (Baja V)" if v_real < 0.60 else "NO CUMPLE (Alta V)")
-    cumple_tau = "CUMPLE" if tau >= 1.00 else "NO CUMPLE (< 1 Pa)"
+    # Validaciones exactas requeridas
+    cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else "NO CUMPLE"
+    cumple_tau = "CUMPLE" if tau >= 1.00 else "NO CUMPLE"
     
     return {
         "COLECTOR": row['COLECTOR'],
         "CAMARA DE": row['DE'],
         "CAMARA A": row['A'],
         "NOMBRE ID": row['TRAMO_ID'],
-        "LONGITUD TRIBUTARIA PROPIA (m)": l_propia,
-        "LONG TRIBUTARIA ACUMULADA (m)": round(long_acum, 2),
-        "MAXIMA AGUA RESIDUAL (Q_unit)": round(q_unit, 4),
-        "AGUA RESIDUAL PROPIA (L/s)": round(q_res_propio, 2),
-        "AGUA RESIDUAL ACUMULADA (L/s)": round(q_res_acum, 2),
-        "CONEXIONES ERRADAS PROPIA (L/s)": round(q_err_propio, 2),
-        "CONEXIONES ERRADAS ACUMULADO (L/s)": round(q_err_acum, 2),
-        "INFILTRACION PROPIO (L/s)": round(q_inf_propio, 2),
-        "INFILTRACION ACUMULADO (L/s)": round(q_inf_acum, 2),
-        "CAUDAL TOTAL (L/s)": round(q_diseno_ls, 2),
-        "Qi (L/s)": round(q_i_ls, 2),
-        "Qf (L/s)": round(q_f_ls, 2),
-        "COTA FONDO INICIAL (m)": c_f_de,
-        "COTA FONDO FINAL (m)": c_f_a,
-        "PENDIENTE (m/m)": round(S, 4),
-        "DIAMETRO CALCULADO (m)": round(D_calc, 4),
-        "DIAMETRO COMERCIAL INTERIOR (m)": D_com,
-        "CAPACIDAD AL 75% (L/s)": round(Q_75 * 1000.0, 2),
-        "VELOCIDAD AL 75% (m/s)": round(V_75, 2),
-        "TIRANTE (m)": round(tirante, 4),
-        "RELACION Y/D": round(relacion_y_D, 4),
-        "VELOCIDAD REAL (m/s)": round(v_real, 4),
-        "RADIO HIDRAULICO REAL (m)": round(r_hid, 4),
-        "TENSION TRACTIVA (Pa)": round(tau, 4),
+        "LONGITUD TRIBUTARIA PROPIA (m)": f"{l_propia:.2f}",
+        "LONG TRIBUTARIA ACUMULADA (m)": f"{long_acum:.2f}",
+        "MAXIMA AGUA RESIDUAL (Q_unit)": f"{q_unit:.2f}",
+        "AGUA RESIDUAL PROPIA (L/s)": f"{q_res_propio:.2f}",
+        "AGUA RESIDUAL ACUMULADA (L/s)": f"{q_res_acum:.2f}",
+        "CONEXIONES ERRADAS PROPIA (L/s)": f"{q_err_propio:.2f}",
+        "CONEXIONES ERRADAS ACUMULADO (L/s)": f"{q_err_acum:.2f}",
+        "INFILTRACION PROPIO (L/s)": f"{q_inf_propio:.2f}",
+        "INFILTRACION ACUMULADO (L/s)": f"{q_inf_acum:.2f}",
+        "CAUDAL TOTAL (L/s)": f"{q_diseno_ls:.2f}",
+        "Qi (L/s)": f"{q_i_ls:.2f}",
+        "Qf (L/s)": f"{q_f_ls:.2f}",
+        "COTA FONDO INICIAL (m)": f"{c_f_de:.2f}",
+        "COTA FONDO FINAL (m)": f"{c_f_a:.2f}",
+        "PENDIENTE (m/m)": f"{S:.2f}",
+        "DIAMETRO CALCULADO (m)": f"{D_calc:.2f}",
+        "DIAMETRO COMERCIAL INTERIOR (m)": f"{D_com:.2f}",
+        "CAPACIDAD AL 75% (L/s)": f"{(Q_75 * 1000.0):.2f}",
+        "VELOCIDAD AL 75% (m/s)": f"{V_75:.2f}",
+        "TIRANTE (m)": f"{tirante:.2f}",
+        "RELACION Y/D": f"{relacion_y_D:.2f}",
+        "VELOCIDAD REAL (m/s)": f"{v_real:.2f}",
+        "RADIO HIDRAULICO REAL (m)": f"{r_hid:.2f}",
+        "TENSION TRACTIVA (Pa)": f"{tau:.2f}",
         "VALIDACION VELOCIDAD": cumple_v,
         "VALIDACION TENSION TRACTIVA": cumple_tau,
-        # Parámetros aux para gráficos
+        # Variables numéricas internas para gráfica
         "D_m": D_com,
-        "Q_m3/s": round(q_diseno_m3s, 5),
-        "S_m/m": round(S, 4),
-        "Theta_rad": round(theta_sol, 4),
-        "Tirante_m": round(tirante, 4),
+        "S_m/m": S,
+        "Theta_rad": theta_sol,
+        "Tirante_m": tirante,
         "Long_m": l_propia
     }
 
 # =============================================================================
-# PESTANA 2: PLANILLA DE CALCULO EN VIVO CON TODAS LAS COLUMNAS REQUERIDAS
+# PESTANA 2: PLANILLA DE CALCULO EN VIVO
 # =============================================================================
 with tab_planilla:
     st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (SOLVER MULTI-COLUMNA)")
     
-    # Editor con selector de diámetro comercial desplegable
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
         num_rows="dynamic",
@@ -307,14 +307,13 @@ with tab_planilla:
         for _, row in df_g.iterrows():
             l_acum += float(row['Long_m'])
             res = calcular_hidraulica_tramo_completo(row, q_unitario, coef_erradas, coef_infilt, l_acum, q_inicio)
-            q_inicio = res['CAUDAL TOTAL (L/s)']
+            q_inicio = float(res['CAUDAL TOTAL (L/s)'])
             resultados_lista.append(res)
             
     df_res_completo = pd.DataFrame(resultados_lista)
     
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
     
-    # Columnas principales a mostrar en la tabla Solver
     columnas_solver_ver = [
         "COLECTOR", "CAMARA DE", "CAMARA A", "NOMBRE ID",
         "LONGITUD TRIBUTARIA PROPIA (m)", "LONG TRIBUTARIA ACUMULADA (m)",
@@ -332,7 +331,6 @@ with tab_planilla:
     
     df_solver_view = df_res_completo[columnas_solver_ver]
     
-    # Estilizado con la paleta suave pastel
     df_res_styled = df_solver_view.style \
         .map(estilar_colector, subset=['COLECTOR']) \
         .map(estilar_cumplimiento, subset=['VALIDACION VELOCIDAD', 'VALIDACION TENSION TRACTIVA'])
@@ -407,11 +405,11 @@ with tab_seccion:
                 fill='toself',
                 fillcolor='rgba(30, 144, 255, 0.65)',
                 line=dict(color='blue', width=2),
-                name=f'Agua ({pct_lleno*100:.1f}% lleno)'
+                name=f'Agua ({pct_lleno*100:.2f}% lleno)'
             ))
 
         fig_pipe.update_layout(
-            title=f"Llenado de Tubería: {pct_lleno*100:.1f}% (Tirante y = {y_val:.4f} m)",
+            title=f"Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.2f} m)",
             xaxis=dict(range=[-R*1.2, R*1.2], constrain='domain', visible=False),
             yaxis=dict(range=[-R*0.2, D_val*1.2], scaleanchor="x", scaleratio=1, visible=False),
             height=400,
