@@ -5,7 +5,7 @@ from scipy.optimize import fsolve
 import plotly.graph_objects as go
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION DE PAGINA Y ESTILOS EN FUENTE TECHNIC / MONOSPACE
+# CONFIGURACION DE PAGINA Y ESTILOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema de Alcantarillado Sanitario",
@@ -49,7 +49,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# INICIALIZACION DE DATOS DE BASE EN SESSION_STATE
+# INICIALIZACION DE DATOS EN SESSION_STATE
 # -----------------------------------------------------------------------------
 def generar_300_tramos():
     tramos = []
@@ -60,8 +60,8 @@ def generar_300_tramos():
         camara_inicio = (num_colector - 1) * 6 + 1
         
         for t_index in range(1, 7):
-            c_de = camara_inicio + (t_index - 1)
-            c_a = c_de + 1
+            c_de = int(camara_inicio + (t_index - 1))
+            c_a = int(c_de + 1)
             
             cota_t_de = round(3830.00 - (t_index * 0.45) - (num_colector * 0.10), 2)
             cota_t_a = round(3830.00 - ((t_index + 1) * 0.45) - (num_colector * 0.10), 2)
@@ -71,8 +71,8 @@ def generar_300_tramos():
             tramos.append({
                 "COLECTOR": colector_tag,
                 "TRAMO_ID": f"T-{tramo_global_count:03d} (C-{c_de} a C-{c_a})",
-                "DE": int(c_de),
-                "A": int(c_a),
+                "DE": c_de,
+                "A": c_a,
                 "Long_m": 66.0,
                 "Cota_Terreno_DE": cota_t_de,
                 "Cota_Terreno_A": cota_t_a,
@@ -132,7 +132,7 @@ with tab_param:
         st.dataframe(df_params, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# FUNCION PARA CALCULAR LA HIDRAULICA SOLVER EXCEL CON VERIFICACIONES
+# FUNCION PARA CALCULAR LA HIDRAULICA
 # =============================================================================
 def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     l_propia = float(row['Long_m'])
@@ -203,24 +203,46 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
         "Cumple_Tension": cumple_tau
     }
 
+# FUNCION PARA ESTILAR CUMPLIMIENTOS EN VERDE Y ROJO
+def estilar_cumplimiento(val):
+    if str(val).startswith("CUMPLE"):
+        return "background-color: #d4edda; color: #155724; font-weight: bold;"
+    else:
+        return "background-color: #f8d7da; color: #721c24; font-weight: bold;"
+
 # =============================================================================
-# PESTANA 2: PLANILLA DE CALCULO EN VIVO (SINCRONIZADA TOTALMENTE)
+# PESTANA 2: PLANILLA DE CALCULO EN VIVO
 # =============================================================================
 with tab_planilla:
     st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 COLECTORES / 300 TRAMOS)")
     
-    # Renderizar editor interactivo vinculándolo directamente a session_state
+    # 1. Renderizar data_editor con TRAMO_ID bloqueado para edición
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
         num_rows="dynamic",
         use_container_width=True,
+        disabled=["TRAMO_ID"],
         key="editor_300_key"
     )
     
-    # Guardar cambios inmediatamente en el estado global
+    # 2. Recalcular dinámicamente TRAMO_ID según las cámaras DE y A elegidas
+    df_edited['TRAMO_ID'] = [
+        f"T-{(idx + 1):03d} (C-{int(row['DE'])} a C-{int(row['A'])})"
+        for idx, row in df_edited.iterrows()
+    ]
+    
+    # Guardar cambios actualizados en session_state
     st.session_state.df_tramos_base = df_edited
 
-    # Recalcular automáticamente en vivo en cada iteración/cambio de celda
+    # 3. Verificación de tramos duplicados (Misma cámara DE y A)
+    pares_camaras = df_edited[['DE', 'A']].values
+    duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
+    
+    if not duplicados.empty:
+        tramos_dupl_str = ", ".join(duplicados['TRAMO_ID'].unique())
+        st.error(f"⚠️ **ALERTA DE TRAMOS DUPLICADOS DETECTADA**: Se encontraron cámaras conexas repetidas en: **{tramos_dupl_str}**. Por favor corrige las cámaras 'DE' y 'A'.")
+
+    # 4. Cálculo dinámico de la planilla hidráulica
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
         l_acum = 0.0
@@ -232,10 +254,17 @@ with tab_planilla:
     df_res_completo = pd.DataFrame(resultados_lista)
     
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
-    st.dataframe(df_res_completo, use_container_width=True)
+    
+    # Aplicar resaltado condicional Verde/Rojo a las columnas de comprobación
+    df_res_styled = df_res_completo.style.map(
+        estilar_cumplimiento, 
+        subset=['Cumple_Velocidad', 'Cumple_Tension']
+    )
+    
+    st.dataframe(df_res_styled, use_container_width=True)
 
 # =============================================================================
-# PESTANA 3: DETALLE DE TRAMO SELECCIONADO Y GRAFICO DE TIRANTE
+# PESTANA 3: DETALLE DE TRAMO Y TIRANTE
 # =============================================================================
 with tab_seccion:
     st.subheader("DETALLE DE TRAMO Y VISUALIZACION DEL TIRANTE DE AGUA")
@@ -267,6 +296,11 @@ with tab_seccion:
             {"PARAMETRO": "Cumple Velocidad", "VALOR": data_t['Cumple_Velocidad']},
             {"PARAMETRO": "Cumple Tension Tractiva", "VALOR": data_t['Cumple_Tension']}
         ])
+        
+        df_tabla_styled = df_tabla_excel.style.map(
+            estilar_cumplimiento,
+            subset=['VALOR']
+        )
         st.dataframe(df_tabla_excel, use_container_width=True, hide_index=True)
         
     with col_t2:
@@ -320,7 +354,7 @@ with tab_seccion:
         st.plotly_chart(fig_pipe, use_container_width=True)
 
 # =============================================================================
-# PESTANA 4: PERFIL LONGITUDINAL DE COLECTORES
+# PESTANA 4: PERFIL LONGITUDINAL
 # =============================================================================
 with tab_perfil:
     st.subheader("PERFILES LONGITUDINALES POR COLECTOR")
