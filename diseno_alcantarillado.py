@@ -3,103 +3,63 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import fsolve
 import plotly.graph_objects as go
-import base64
 
-# Función helper para convertir imágenes locales a Base64
-def get_image_base64(path):
-    try:
-        with open(path, "rb") as image_file:
-            encoded = base64.b64encode(image_file.read()).decode()
-            return f"data:image/png;base64,{encoded}"
-    except Exception:
-        return ""
-
-# Cargar las imágenes
-img_izq_b64 = get_image_base64("logo_izquierda.png")
-img_der_b64 = get_image_base64("logo_derecha.png")
 
 # -----------------------------------------------------------------------------
-# ENCABEZADO UNIFORME Y RESPONSIVO (NUNCA SE APILA)
+# CONFIGURACION DE PAGINA Y ESTILOS
 # -----------------------------------------------------------------------------
-st.markdown(f"""
-<div style="
-    background-color: #8B0000;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-">
-    <!-- Logo Izquierdo (Fondo blanco circular para uniformizar con el logo derecho) -->
-    <div style="
-        background: white; 
-        border-radius: 50%; 
-        padding: 4px; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center;
-        flex-shrink: 0;
-    ">
-        <img src="{img_izq_b64}" style="height: clamp(40px, 6vw, 75px); width: auto; max-width: 100%; object-fit: contain;">
-    </div>
+st.set_page_config(
+    page_title="Sistema de Alcantarillado Sanitario",
+    layout="wide"
+)
+
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Consolas&family=Roboto+Mono:wght@700&display=swap');
     
-    <!-- Texto Central -->
-    <div style="text-align: center; flex-grow: 1; min-width: 0;">
-        <h3 style="
-            margin: 0; 
-            color: white; 
-            font-size: clamp(12px, 2.2vw, 20px); 
-            font-weight: 900; 
-            letter-spacing: 1px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        ">
+    html, body, [class*="css"], div, span, label, input, button, table {
+        font-family: 'Consolas', 'Roboto Mono', 'Courier New', monospace !important;
+        font-weight: 700 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# ENCABEZADO CON LOGOS Y DATOS PEQUEÑOS
+# -----------------------------------------------------------------------------
+col_logo_izq, col_titulo, col_logo_der = st.columns([1.5, 7, 1.5])
+
+with col_logo_izq:
+    st.image("logo_izquierda.png", use_container_width=True) 
+
+with col_titulo:
+    st.markdown("""
+    <div style="
+        background-color: #8B0000;
+        color: white;
+        padding: 12px 15px;
+        border: 2px solid #5A0000;
+        text-align: center;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    ">
+        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">
             SISTEMA DE ALCANTARILLADO SANITARIO
-        </h3>
-        <div style="
-            font-size: clamp(9px, 1.4vw, 12px); 
-            font-weight: 700; 
-            color: #E0E0E0; 
-            margin-top: 2px;
-        ">
+        </div>
+        <div style="font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #E0E0E0; text-transform: uppercase;">
             CÁLCULO HIDRÁULICO
         </div>
-        
-        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 6px 0;">
-        
-        <div style="
-            font-size: clamp(7.5px, 1vw, 10px); 
-            font-weight: 400; 
-            color: #F0F0F0; 
-            opacity: 0.9;
-            line-height: 1.2;
-        ">
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 8px 0;">
+        <div style="font-size: 9.5px; font-weight: 400; line-height: 1.3; color: #F0F0F0; opacity: 0.9;">
             POR: Condori Bustincio, Norka Guadalupe 240852 &nbsp;|&nbsp; 
             CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp; 
             DOCENTE: Fernández Sila, Guillermo Nestor
         </div>
     </div>
-    
-    <!-- Logo Derecho -->
-    <div style="
-        background: white; 
-        border-radius: 50%; 
-        padding: 4px; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center;
-        flex-shrink: 0;
-    ">
-        <img src="{img_der_b64}" style="height: clamp(40px, 6vw, 75px); width: auto; max-width: 100%; object-fit: contain;">
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
+with col_logo_der:
+    st.image("logo_derecha.png", use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # INICIALIZACION DE DATOS EN SESSION_STATE
