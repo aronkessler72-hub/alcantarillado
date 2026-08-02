@@ -90,25 +90,31 @@ def generar_300_tramos():
 if "df_tramos_base" not in st.session_state:
     st.session_state.df_tramos_base = generar_300_tramos()
 
-# PALETA DE COLORES PASTEL PARA AGRUPAR COLECTORES
-PALETA_COLECTORES = [
-    "#e6f2ff", "#e6ffe6", "#fff0f5", "#f0f8ff", "#fff8dc",
-    "#f3e5f5", "#e8f8f5", "#fef9e7", "#ebf5fb", "#fced4c2"
+# PALETA EXCLUSIVAMENTE DE COLORES CLAROS / PASTEL
+PALETA_COLECTORES_CLAROS = [
+    "#EBF5FB",  # Azul ultra claro
+    "#E8F8F5",  # Menta claro
+    "#FEF9E7",  # Crema suave
+    "#F5EEF8",  # Lila pastel
+    "#FBEEE6",  # Melocotón claro
+    "#EAEDED",  # Gris perla claro
+    "#EAF2F8",  # Hielo claro
+    "#FEF5E7"   # Marfil suave
 ]
 
 def estilar_colector(val):
     try:
         num = int(str(val).replace("COLECTOR", "").strip())
-        color = PALETA_COLECTORES[(num - 1) % len(PALETA_COLECTORES)]
-        return f"background-color: {color}; color: #1c2833; font-weight: bold;"
+        color = PALETA_COLECTORES_CLAROS[(num - 1) % len(PALETA_COLECTORES_CLAROS)]
+        return f"background-color: {color}; color: #2C3E50; font-weight: bold;"
     except:
         return ""
 
 def estilar_cumplimiento(val):
     if str(val).startswith("CUMPLE"):
-        return "background-color: #d4edda; color: #155724; font-weight: bold;"
+        return "background-color: #D4EDDA; color: #155724; font-weight: bold;"
     else:
-        return "background-color: #f8d7da; color: #721c24; font-weight: bold;"
+        return "background-color: #F8D7DA; color: #721C24; font-weight: bold;"
 
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
@@ -265,7 +271,7 @@ with tab_planilla:
     
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
     
-    # Estilizado de la tabla Solver (Colector agrupado por color + Cumplimientos verde/rojo)
+    # Aplicar estilos con paleta pastel clara
     df_res_styled = df_res_completo.style \
         .map(estilar_colector, subset=['COLECTOR']) \
         .map(estilar_cumplimiento, subset=['Cumple_Velocidad', 'Cumple_Tension'])
