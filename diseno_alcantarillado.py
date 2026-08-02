@@ -44,56 +44,59 @@ st.markdown("""
 </style>
 <div class="header-box">
     <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CALCULO HIDRAULICO Y VISUALIZACION DE TIRANTE EN SECCION CIRCULAR</div>
+    <div class="header-subtitle">CALCULO HIDRAULICO (50 COLECTORES - 300 TRAMOS)</div>
 </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# GENERACION DE DATASET INICIAL DE 50 TRAMOS
+# GENERACION DE DATASET INICIAL DE 50 COLECTORES (300 TRAMOS)
 # -----------------------------------------------------------------------------
 @st.cache_data
-def generar_50_tramos():
+def generar_300_tramos():
     tramos = []
-    camara_inicio = 1
-    for i in range(1, 51):
-        c_de = camara_inicio
-        c_a = camara_inicio + 1
-        camara_inicio += 1
-        
-        # Asignación por colectores (cada 10 tramos un colector nuevo)
-        num_colector = ((i - 1) // 10) + 1
+    tramo_global_count = 1
+    
+    # 50 colectores, 6 tramos por colector = 300 tramos
+    for num_colector in range(1, 51):
         colector_tag = f"COLECTOR {num_colector}"
+        camara_inicio = (num_colector - 1) * 6 + 1
         
-        cota_t_de = round(3830.00 - (i * 0.45), 2)
-        cota_t_a = round(3830.00 - ((i + 1) * 0.45), 2)
-        cota_f_de = round(cota_t_de - 1.20, 2)
-        cota_f_a = round(cota_t_a - 1.20, 2)
-        
-        tramos.append({
-            "COLECTOR": colector_tag,
-            "TRAMO_ID": f"T-{i:02d} (C-{c_de} a C-{c_a})",
-            "DE": c_de,
-            "A": c_a,
-            "Long_m": 66.0,
-            "Cota_Terreno_DE": cota_t_de,
-            "Cota_Terreno_A": cota_t_a,
-            "Cota_Tapa_DE": cota_t_de,
-            "Cota_Fondo_DE": cota_f_de,
-            "Cota_Fondo_A": cota_f_a,
-            "D_m": 0.1536,
-            "Manning_n": 0.013,
-            "Q_min_RNE": 1.50
-        })
+        for t_index in range(1, 7):
+            c_de = camara_inicio + (t_index - 1)
+            c_a = c_de + 1
+            
+            cota_t_de = round(3830.00 - (t_index * 0.45) - (num_colector * 0.10), 2)
+            cota_t_a = round(3830.00 - ((t_index + 1) * 0.45) - (num_colector * 0.10), 2)
+            cota_f_de = round(cota_t_de - 1.20, 2)
+            cota_f_a = round(cota_t_a - 1.20, 2)
+            
+            tramos.append({
+                "COLECTOR": colector_tag,
+                "TRAMO_ID": f"T-{tramo_global_count:03d} (C-{c_de} a C-{c_a})",
+                "DE": c_de,
+                "A": c_a,
+                "Long_m": 66.0,
+                "Cota_Terreno_DE": cota_t_de,
+                "Cota_Terreno_A": cota_t_a,
+                "Cota_Tapa_DE": cota_t_de,
+                "Cota_Fondo_DE": cota_f_de,
+                "Cota_Fondo_A": cota_f_a,
+                "D_m": 0.1536,
+                "Manning_n": 0.013,
+                "Q_min_RNE": 1.50
+            })
+            tramo_global_count += 1
+            
     return pd.DataFrame(tramos)
 
-df_tramos_base = generar_50_tramos()
+df_tramos_base = generar_300_tramos()
 
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
 # -----------------------------------------------------------------------------
 tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
     "1. PARAMETROS DE DISENO", 
-    "2. PLANILLA HIDRAULICA (50 TRAMOS)", 
+    "2. PLANILLA HIDRAULICA (300 TRAMOS)", 
     "3. DETALLE DE TRAMO Y TIRANTE DE AGUA",
     "4. PERFIL LONGITUDINAL"
 ])
@@ -113,7 +116,7 @@ with tab_param:
         coef_retorno = st.number_input("Coeficiente de retorno (%)", value=80.0) / 100.0
         coef_erradas = st.number_input("Coeficiente conexiones erradas (%)", value=15.0) / 100.0
         coef_infilt = st.number_input("Coeficiente de infiltracion (L/s/m)", value=0.0001, format="%.4f")
-        long_total = st.number_input("Longitud total de red (m)", value=3300.00, format="%.2f")
+        long_total = st.number_input("Longitud total de red (m)", value=19800.00, format="%.2f")
 
     q_retorno = qmh * coef_retorno
     q_erradas = q_retorno * coef_erradas
@@ -130,7 +133,7 @@ with tab_param:
         st.dataframe(df_params, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# FUNCION PARA CALCULAR LA HIDRAULICA SOLVER EXCEL
+# FUNCION PARA CALCULAR LA HIDRAULICA SOLVER EXCEL CON VERIFICACIONES
 # =============================================================================
 def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     l_propia = float(row['Long_m'])
@@ -150,10 +153,8 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     D = float(row['D_m'])
     n = float(row['Manning_n'])
     
-    # K según tu imagen: K = (n * Q) / (sqrt(S) * D^(8/3))
     K = (n * q_diseno_m3s) / (np.sqrt(S) * (D ** (8/3)))
     
-    # Solver de theta en radianes: ((theta - sin(theta))^5) / (theta^2) = K
     def func_solver(theta):
         if theta <= 0.0001: return 1e6
         return (((theta - np.sin(theta)) ** 5) / (theta ** 2)) - K
@@ -168,16 +169,17 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     r_hid = area / perimetro if perimetro > 0 else 0.0
     v_real = q_diseno_m3s / area if area > 0 else 0.0
     
-    # Tirante y Espejo de Agua
     tirante = (D / 2.0) * (1.0 - np.cos(theta_sol / 2.0))
     espejo_agua = D * np.sin(theta_sol / 2.0)
     
-    # Numero de Froude
     d_m = area / espejo_agua if espejo_agua > 0 else D
     froude = v_real / np.sqrt(9.81 * d_m) if d_m > 0 else 0.0
     
-    # Tension Tractiva (Pa)
     tau = 9810.0 * r_hid * S
+    
+    # Verificaciones normativas
+    cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else ("NO CUMPLE (Baja V)" if v_real < 0.60 else "NO CUMPLE (Alta V)")
+    cumple_tau = "CUMPLE" if tau >= 1.00 else "NO CUMPLE (< 1 Pa)"
     
     return {
         "COLECTOR": row['COLECTOR'],
@@ -198,18 +200,19 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
         "Tirante_m": round(tirante, 4),
         "Espejo_Agua_m": round(espejo_agua, 4),
         "Froude": round(froude, 4),
-        "Tension_Tractiva_Pa": round(tau, 4)
+        "Tension_Tractiva_Pa": round(tau, 4),
+        "Cumple_Velocidad": cumple_v,
+        "Cumple_Tension": cumple_tau
     }
 
 # =============================================================================
-# PESTANA 2: PLANILLA DE CALCULO EN VIVO (50 TRAMOS)
+# PESTANA 2: PLANILLA DE CALCULO EN VIVO (50 COLECTORES / 300 TRAMOS)
 # =============================================================================
 with tab_planilla:
-    st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 TRAMOS)")
+    st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 COLECTORES / 300 TRAMOS)")
     
-    df_edited = st.data_editor(df_tramos_base, num_rows="dynamic", use_container_width=True, key="editor_50")
+    df_edited = st.data_editor(df_tramos_base, num_rows="dynamic", use_container_width=True, key="editor_300")
 
-    # Recálculo continuo en vivo
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
         l_acum = 0.0
@@ -231,7 +234,6 @@ with tab_seccion:
     lista_tramos_opciones = df_res_completo['TRAMO_ID'].tolist()
     tramo_seleccionado = st.selectbox("SELECCIONAR EL TRAMO A ANALIZAR:", lista_tramos_opciones)
     
-    # Filtrar datos del tramo elegido
     data_t = df_res_completo[df_res_completo['TRAMO_ID'] == tramo_seleccionado].iloc[0]
     
     col_t1, col_t2 = st.columns([1, 1])
@@ -251,7 +253,9 @@ with tab_seccion:
             {"PARAMETRO": "Tirante De Agua (m)", "VALOR": data_t['Tirante_m']},
             {"PARAMETRO": "Espejo De Agua (m)", "VALOR": data_t['Espejo_Agua_m']},
             {"PARAMETRO": "Numero De Froude", "VALOR": data_t['Froude']},
-            {"PARAMETRO": "Tension Tractiva (Pa)", "VALOR": data_t['Tension_Tractiva_Pa']}
+            {"PARAMETRO": "Tension Tractiva (Pa)", "VALOR": data_t['Tension_Tractiva_Pa']},
+            {"PARAMETRO": "Cumple Velocidad", "VALOR": data_t['Cumple_Velocidad']},
+            {"PARAMETRO": "Cumple Tension Tractiva", "VALOR": data_t['Cumple_Tension']}
         ])
         st.dataframe(df_tabla_excel, use_container_width=True, hide_index=True)
         
@@ -262,17 +266,14 @@ with tab_seccion:
         y_val = data_t['Tirante_m']
         R = D_val / 2.0
         
-        # Puntos de la tubería (círculo)
         angles = np.linspace(0, 2*np.pi, 200)
         x_pipe = R * np.cos(angles)
-        y_pipe = R * np.sin(angles) + R  # Desplazado para que el fondo sea y=0
+        y_pipe = R * np.sin(angles) + R
         
-        # Puntos de la superficie de agua
         pct_lleno = min(y_val / D_val, 1.0)
         
         fig_pipe = go.Figure()
         
-        # Contorno Tubería
         fig_pipe.add_trace(go.Scatter(
             x=x_pipe, y=y_pipe,
             mode='lines',
@@ -280,14 +281,12 @@ with tab_seccion:
             name='Tubería'
         ))
         
-        # Área Llenada de Agua
         theta_val = data_t['Theta_rad']
         if theta_val > 0:
             angles_water = np.linspace((3*np.pi/2) - (theta_val/2), (3*np.pi/2) + (theta_val/2), 100)
             x_water = R * np.cos(angles_water)
             y_water = R * np.sin(angles_water) + R
             
-            # Cerrar el polígono con el espejo de agua
             x_water = np.append(x_water, [x_water[-1], x_water[0]])
             y_water = np.append(y_water, [y_water[-1], y_water[-1]])
             
@@ -314,7 +313,7 @@ with tab_seccion:
 # PESTANA 4: PERFIL LONGITUDINAL DE COLECTORES
 # =============================================================================
 with tab_perfil:
-    st.subheader("PERFILES LONGITUDINALES")
+    st.subheader("PERFILES LONGITUDINALES POR COLECTOR")
     
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
     col_elegido = st.selectbox("SELECCIONAR COLECTOR:", lista_cols)
