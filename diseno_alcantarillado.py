@@ -600,7 +600,7 @@ with tab_perfil:
     
     st.plotly_chart(fig_cad, use_container_width=True)
     
-    st.markdown("#### 📐 GUITARRA DE DATOS DE CAMPO (GUITARRA CAD)")
+    st.markdown("#### GUITARRA DE DATOS DE CAMPO (GUITARRA CAD)")
     
     filas_guitarra = []
     
