@@ -44,13 +44,15 @@ st.markdown("""
 </style>
 <div class="header-box">
     <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CALCULO HIDRAULICO DINAMICO (50 COLECTORES - 300 TRAMOS)</div>
+    <div class="header-subtitle">CALCULO HIDRAULICO DINAMICO COMPLETO</div>
 </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # INICIALIZACION DE DATOS EN SESSION_STATE
 # -----------------------------------------------------------------------------
+OPCIONES_DIAMETROS = [0.1500, 0.1536, 0.2000, 0.2500, 0.3000, 0.3500, 0.4000, 0.4500, 0.5000]
+
 def generar_300_tramos():
     tramos = []
     tramo_global_count = 1
@@ -76,10 +78,9 @@ def generar_300_tramos():
                 "Long_m": 66.0,
                 "Cota_Terreno_DE": cota_t_de,
                 "Cota_Terreno_A": cota_t_a,
-                "Cota_Tapa_DE": cota_t_de,
                 "Cota_Fondo_DE": cota_f_de,
                 "Cota_Fondo_A": cota_f_a,
-                "D_m": 0.1536,
+                "D_comercial_m": 0.1536,
                 "Manning_n": 0.013,
                 "Q_min_RNE": 1.50
             })
@@ -114,7 +115,7 @@ def estilar_cumplimiento(val):
 # -----------------------------------------------------------------------------
 tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
     "1. PARAMETROS DE DISENO", 
-    "2. PLANILLA HIDRAULICA (300 TRAMOS)", 
+    "2. PLANILLA HIDRAULICA (SOLVER COMPLETO)", 
     "3. DETALLE DE TRAMO Y TIRANTE DE AGUA",
     "4. PERFIL LONGITUDINAL TIPO CAD"
 ])
@@ -151,27 +152,55 @@ with tab_param:
         st.dataframe(df_params, use_container_width=True, hide_index=True)
 
 # =============================================================================
-# FUNCION PARA CALCULAR LA HIDRAULICA
+# FUNCION PARA CALCULAR LA HIDRAULICA DETALLADA CON TODAS LAS COLUMNAS
 # =============================================================================
-def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
+def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_acum, q_inicio_anterior):
     l_propia = float(row['Long_m'])
     
-    q_dom_acum = q_unit * long_acum
-    q_err_acum = q_dom_acum * c_erradas
+    # 1. Aguas residuales
+    q_res_propio = q_unit * l_propia
+    q_res_acum = q_unit * long_acum
+    
+    # 2. Conexiones erradas
+    q_err_propio = q_res_propio * c_erradas
+    q_err_acum = q_res_acum * c_erradas
+    
+    # 3. Infiltración
+    q_inf_propio = c_infilt * l_propia
     q_inf_acum = c_infilt * long_acum
     
-    q_max = q_dom_acum + q_err_acum + q_inf_acum
-    q_diseno_ls = max(q_max, float(row['Q_min_RNE']))
+    # 4. Caudal total acumulado
+    q_tot_calculado = q_res_acum + q_err_acum + q_inf_acum
+    q_diseno_ls = max(q_tot_calculado, float(row['Q_min_RNE']))
+    
+    # Qi (inicial) y Qf (final)
+    q_i_ls = q_inicio_anterior
+    q_f_ls = q_diseno_ls
+    
     q_diseno_m3s = q_diseno_ls / 1000.0
     
+    # Pendiente
     c_f_de = float(row['Cota_Fondo_DE'])
     c_f_a = float(row['Cota_Fondo_A'])
     S = (c_f_de - c_f_a) / l_propia if l_propia > 0 else 0.001
-    
-    D = float(row['D_m'])
     n = float(row['Manning_n'])
     
-    K = (n * q_diseno_m3s) / (np.sqrt(S) * (D ** (8/3))) if (S > 0 and D > 0) else 0.01
+    # Diámetro calculado teórico (m)
+    D_calc = float(( (q_diseno_m3s * n) / (0.312 * np.sqrt(S)) ) ** (3/8)) if S > 0 else 0.1000
+    
+    # Diámetro comercial interior seleccionado (desplegable)
+    D_com = float(row['D_comercial_m'])
+    
+    # Capacidad a sección llena y al 75%
+    A_llena = (np.pi * (D_com ** 2)) / 4.0
+    RH_lleno = D_com / 4.0
+    Q_lleno = (1.0 / n) * A_llena * (RH_lleno ** (2/3)) * np.sqrt(S)
+    
+    Q_75 = 0.75 * Q_lleno
+    V_75 = (1.0 / n) * (RH_lleno ** (2/3)) * np.sqrt(S) # aprox o real al 75%
+    
+    # Solver de Manning para sección parcial
+    K = (n * q_diseno_m3s) / (np.sqrt(S) * (D_com ** (8/3))) if (S > 0 and D_com > 0) else 0.01
     
     def func_solver(theta):
         if theta <= 0.0001: return 1e6
@@ -182,16 +211,13 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     except:
         theta_sol = np.pi
         
-    area = (D**2 / 8.0) * (theta_sol - np.sin(theta_sol))
-    perimetro = (D / 2.0) * theta_sol
+    area = (D_com**2 / 8.0) * (theta_sol - np.sin(theta_sol))
+    perimetro = (D_com / 2.0) * theta_sol
     r_hid = area / perimetro if perimetro > 0 else 0.0
     v_real = q_diseno_m3s / area if area > 0 else 0.0
     
-    tirante = (D / 2.0) * (1.0 - np.cos(theta_sol / 2.0))
-    espejo_agua = D * np.sin(theta_sol / 2.0)
-    
-    d_m = area / espejo_agua if espejo_agua > 0 else D
-    froude = v_real / np.sqrt(9.81 * d_m) if d_m > 0 else 0.0
+    tirante = (D_com / 2.0) * (1.0 - np.cos(theta_sol / 2.0))
+    relacion_y_D = tirante / D_com if D_com > 0 else 0.0
     
     tau = 9810.0 * r_hid * S
     
@@ -200,39 +226,65 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     
     return {
         "COLECTOR": row['COLECTOR'],
-        "TRAMO_ID": row['TRAMO_ID'],
-        "DE": row['DE'],
-        "A": row['A'],
-        "Long_m": l_propia,
-        "S_m/m": round(S, 4),
-        "D_m": D,
-        "Q_L/s": round(q_diseno_ls, 2),
+        "CAMARA DE": row['DE'],
+        "CAMARA A": row['A'],
+        "NOMBRE ID": row['TRAMO_ID'],
+        "LONGITUD TRIBUTARIA PROPIA (m)": l_propia,
+        "LONG TRIBUTARIA ACUMULADA (m)": round(long_acum, 2),
+        "MAXIMA AGUA RESIDUAL (Q_unit)": round(q_unit, 4),
+        "AGUA RESIDUAL PROPIA (L/s)": round(q_res_propio, 2),
+        "AGUA RESIDUAL ACUMULADA (L/s)": round(q_res_acum, 2),
+        "CONEXIONES ERRADAS PROPIA (L/s)": round(q_err_propio, 2),
+        "CONEXIONES ERRADAS ACUMULADO (L/s)": round(q_err_acum, 2),
+        "INFILTRACION PROPIO (L/s)": round(q_inf_propio, 2),
+        "INFILTRACION ACUMULADO (L/s)": round(q_inf_acum, 2),
+        "CAUDAL TOTAL (L/s)": round(q_diseno_ls, 2),
+        "Qi (L/s)": round(q_i_ls, 2),
+        "Qf (L/s)": round(q_f_ls, 2),
+        "COTA FONDO INICIAL (m)": c_f_de,
+        "COTA FONDO FINAL (m)": c_f_a,
+        "PENDIENTE (m/m)": round(S, 4),
+        "DIAMETRO CALCULADO (m)": round(D_calc, 4),
+        "DIAMETRO COMERCIAL INTERIOR (m)": D_com,
+        "CAPACIDAD AL 75% (L/s)": round(Q_75 * 1000.0, 2),
+        "VELOCIDAD AL 75% (m/s)": round(V_75, 2),
+        "TIRANTE (m)": round(tirante, 4),
+        "RELACION Y/D": round(relacion_y_D, 4),
+        "VELOCIDAD REAL (m/s)": round(v_real, 4),
+        "RADIO HIDRAULICO REAL (m)": round(r_hid, 4),
+        "TENSION TRACTIVA (Pa)": round(tau, 4),
+        "VALIDACION VELOCIDAD": cumple_v,
+        "VALIDACION TENSION TRACTIVA": cumple_tau,
+        # Parámetros aux para gráficos
+        "D_m": D_com,
         "Q_m3/s": round(q_diseno_m3s, 5),
-        "K": round(K, 4),
+        "S_m/m": round(S, 4),
         "Theta_rad": round(theta_sol, 4),
-        "Area_m2": round(area, 4),
-        "Perimetro_m": round(perimetro, 4),
-        "R_Hidraulico_m": round(r_hid, 4),
-        "Velocidad_m/s": round(v_real, 4),
         "Tirante_m": round(tirante, 4),
-        "Espejo_Agua_m": round(espejo_agua, 4),
-        "Froude": round(froude, 4),
-        "Tension_Tractiva_Pa": round(tau, 4),
-        "Cumple_Velocidad": cumple_v,
-        "Cumple_Tension": cumple_tau
+        "Long_m": l_propia
     }
 
 # =============================================================================
-# PESTANA 2: PLANILLA DE CALCULO EN VIVO
+# PESTANA 2: PLANILLA DE CALCULO EN VIVO CON TODAS LAS COLUMNAS REQUERIDAS
 # =============================================================================
 with tab_planilla:
-    st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 COLECTORES / 300 TRAMOS)")
+    st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (SOLVER MULTI-COLUMNA)")
     
+    # Editor con selector de diámetro comercial desplegable
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
         num_rows="dynamic",
         use_container_width=True,
         disabled=["TRAMO_ID"],
+        column_config={
+            "D_comercial_m": st.column_config.SelectboxColumn(
+                "Diámetro Comercial (m)",
+                help="Selecciona el diámetro interior comercial",
+                width="medium",
+                options=OPCIONES_DIAMETROS,
+                required=True
+            )
+        },
         key="editor_300_key"
     )
     
@@ -246,23 +298,44 @@ with tab_planilla:
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
     if not duplicados.empty:
         tramos_dupl_str = ", ".join(duplicados['TRAMO_ID'].unique())
-        st.error(f"⚠️ **ALERTA DE TRAMOS DUPLICADOS DETECTADA**: Se encontraron cámaras conexas repetidas en: **{tramos_dupl_str}**. Por favor corrige las cámaras 'DE' y 'A'.")
+        st.error(f"⚠️ **ALERTA DE TRAMOS DUPLICADOS DETECTADA**: Se encontraron cámaras conexas repetidas en: **{tramos_dupl_str}**.")
 
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
         l_acum = 0.0
+        q_inicio = 0.0
         for _, row in df_g.iterrows():
             l_acum += float(row['Long_m'])
-            res = calcular_hidraulica_tramo(row, q_unitario, coef_erradas, coef_infilt, l_acum)
+            res = calcular_hidraulica_tramo_completo(row, q_unitario, coef_erradas, coef_infilt, l_acum, q_inicio)
+            q_inicio = res['CAUDAL TOTAL (L/s)']
             resultados_lista.append(res)
             
     df_res_completo = pd.DataFrame(resultados_lista)
     
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
     
-    df_res_styled = df_res_completo.style \
+    # Columnas principales a mostrar en la tabla Solver
+    columnas_solver_ver = [
+        "COLECTOR", "CAMARA DE", "CAMARA A", "NOMBRE ID",
+        "LONGITUD TRIBUTARIA PROPIA (m)", "LONG TRIBUTARIA ACUMULADA (m)",
+        "MAXIMA AGUA RESIDUAL (Q_unit)", "AGUA RESIDUAL PROPIA (L/s)", "AGUA RESIDUAL ACUMULADA (L/s)",
+        "CONEXIONES ERRADAS PROPIA (L/s)", "CONEXIONES ERRADAS ACUMULADO (L/s)",
+        "INFILTRACION PROPIO (L/s)", "INFILTRACION ACUMULADO (L/s)",
+        "CAUDAL TOTAL (L/s)", "Qi (L/s)", "Qf (L/s)",
+        "COTA FONDO INICIAL (m)", "COTA FONDO FINAL (m)",
+        "PENDIENTE (m/m)", "DIAMETRO CALCULADO (m)", "DIAMETRO COMERCIAL INTERIOR (m)",
+        "CAPACIDAD AL 75% (L/s)", "VELOCIDAD AL 75% (m/s)",
+        "TIRANTE (m)", "RELACION Y/D", "VELOCIDAD REAL (m/s)",
+        "RADIO HIDRAULICO REAL (m)", "TENSION TRACTIVA (Pa)",
+        "VALIDACION VELOCIDAD", "VALIDACION TENSION TRACTIVA"
+    ]
+    
+    df_solver_view = df_res_completo[columnas_solver_ver]
+    
+    # Estilizado con la paleta suave pastel
+    df_res_styled = df_solver_view.style \
         .map(estilar_colector, subset=['COLECTOR']) \
-        .map(estilar_cumplimiento, subset=['Cumple_Velocidad', 'Cumple_Tension'])
+        .map(estilar_cumplimiento, subset=['VALIDACION VELOCIDAD', 'VALIDACION TENSION TRACTIVA'])
     
     st.dataframe(df_res_styled, use_container_width=True)
 
@@ -272,32 +345,29 @@ with tab_planilla:
 with tab_seccion:
     st.subheader("DETALLE DE TRAMO Y VISUALIZACION DEL TIRANTE DE AGUA")
     
-    lista_tramos_opciones = df_res_completo['TRAMO_ID'].tolist()
+    lista_tramos_opciones = df_res_completo['NOMBRE ID'].tolist()
     tramo_seleccionado = st.selectbox("SELECCIONAR EL TRAMO A ANALIZAR:", lista_tramos_opciones)
     
-    data_t = df_res_completo[df_res_completo['TRAMO_ID'] == tramo_seleccionado].iloc[0]
+    data_t = df_res_completo[df_res_completo['NOMBRE ID'] == tramo_seleccionado].iloc[0]
     
     col_t1, col_t2 = st.columns([1, 1])
     
     with col_t1:
-        st.markdown(f"#### PARAMETROS DEL {tramo_seleccionado}")
+        st.markdown(f"#### PARAMETROS DETALLADOS DEL {tramo_seleccionado}")
         df_tabla_excel = pd.DataFrame([
-            {"PARAMETRO": "Longitud (m)", "VALOR": data_t['Long_m']},
-            {"PARAMETRO": "Diametro (m)", "VALOR": data_t['D_m']},
-            {"PARAMETRO": "Caudal (m3/s)", "VALOR": data_t['Q_m3/s']},
-            {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['S_m/m']},
-            {"PARAMETRO": "Factor K", "VALOR": data_t['K']},
-            {"PARAMETRO": "Angulo theta (rad)", "VALOR": data_t['Theta_rad']},
-            {"PARAMETRO": "Area Mojada (m2)", "VALOR": data_t['Area_m2']},
-            {"PARAMETRO": "Perimetro Mojado P (m)", "VALOR": data_t['Perimetro_m']},
-            {"PARAMETRO": "Radio Hidraulico (m)", "VALOR": data_t['R_Hidraulico_m']},
-            {"PARAMETRO": "Velocidad (m/s)", "VALOR": data_t['Velocidad_m/s']},
-            {"PARAMETRO": "Tirante De Agua (m)", "VALOR": data_t['Tirante_m']},
-            {"PARAMETRO": "Espejo De Agua (m)", "VALOR": data_t['Espejo_Agua_m']},
-            {"PARAMETRO": "Numero De Froude", "VALOR": data_t['Froude']},
-            {"PARAMETRO": "Tension Tractiva (Pa)", "VALOR": data_t['Tension_Tractiva_Pa']},
-            {"PARAMETRO": "Cumple Velocidad", "VALOR": data_t['Cumple_Velocidad']},
-            {"PARAMETRO": "Cumple Tension Tractiva", "VALOR": data_t['Cumple_Tension']}
+            {"PARAMETRO": "Longitud Tributaria Propia (m)", "VALOR": data_t['LONGITUD TRIBUTARIA PROPIA (m)']},
+            {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONG TRIBUTARIA ACUMULADA (m)']},
+            {"PARAMETRO": "Caudal Total (L/s)", "VALOR": data_t['CAUDAL TOTAL (L/s)']},
+            {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['PENDIENTE (m/m)']},
+            {"PARAMETRO": "Diametro Calculado (m)", "VALOR": data_t['DIAMETRO CALCULADO (m)']},
+            {"PARAMETRO": "Diametro Comercial Interior (m)", "VALOR": data_t['DIAMETRO COMERCIAL INTERIOR (m)']},
+            {"PARAMETRO": "Velocidad Real (m/s)", "VALOR": data_t['VELOCIDAD REAL (m/s)']},
+            {"PARAMETRO": "Tirante (m)", "VALOR": data_t['TIRANTE (m)']},
+            {"PARAMETRO": "Relacion Y/D", "VALOR": data_t['RELACION Y/D']},
+            {"PARAMETRO": "Radio Hidraulico Real (m)", "VALOR": data_t['RADIO HIDRAULICO REAL (m)']},
+            {"PARAMETRO": "Tension Tractiva (Pa)", "VALOR": data_t['TENSION TRACTIVA (Pa)']},
+            {"PARAMETRO": "Validacion Velocidad", "VALOR": data_t['VALIDACION VELOCIDAD']},
+            {"PARAMETRO": "Validacion Tension Tractiva", "VALOR": data_t['VALIDACION TENSION TRACTIVA']}
         ])
         st.dataframe(df_tabla_excel, use_container_width=True, hide_index=True)
         
@@ -360,11 +430,9 @@ with tab_perfil:
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
     col_elegido = st.selectbox("SELECCIONAR COLECTOR PARA EL PERFIL:", lista_cols)
     
-    # Filtrar tramos del colector seleccionado
     df_p = st.session_state.df_tramos_base[st.session_state.df_tramos_base['COLECTOR'] == col_elegido].reset_index(drop=True)
     df_res_p = df_res_completo[df_res_completo['COLECTOR'] == col_elegido].reset_index(drop=True)
     
-    # Construir vectores de nodos/buzones
     nodos_x = [0.0]
     cota_terreno_nodes = [float(df_p.iloc[0]['Cota_Terreno_DE'])]
     cota_fondo_nodes = [float(df_p.iloc[0]['Cota_Fondo_DE'])]
@@ -380,7 +448,6 @@ with tab_perfil:
 
     fig_cad = go.Figure()
     
-    # 1. Terreno Natural (Verde)
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_terreno_nodes,
         mode='lines',
@@ -388,7 +455,6 @@ with tab_perfil:
         name='Terreno Natural'
     ))
     
-    # 2. Tubería / Fondo (Marrón Doble / Tubería gruesa)
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_fondo_nodes,
         mode='lines',
@@ -396,7 +462,6 @@ with tab_perfil:
         name='Tubería (Fondo)'
     ))
     
-    # 3. Dibujar Buzones (Columnas/Estructuras Grises en los nodos)
     ancho_bz = (max(nodos_x) if max(nodos_x) > 0 else 100) * 0.008
     for i in range(len(nodos_x)):
         x_c = nodos_x[i]
@@ -404,7 +469,6 @@ with tab_perfil:
         y_top = cota_terreno_nodes[i]
         h_bz = y_top - y_bottom
         
-        # Rectángulo del buzón
         fig_cad.add_shape(
             type="rect",
             x0=x_c - ancho_bz, x1=x_c + ancho_bz,
@@ -413,7 +477,6 @@ with tab_perfil:
             line=dict(color="black", width=1.5)
         )
         
-        # Cuadro de texto sobre el buzón con CT, CF y H
         fig_cad.add_annotation(
             x=x_c, y=y_top + 0.35,
             text=f"<b>{buzones_names[i]}</b><br>CT: {y_top:.2f}<br>CF: {y_bottom:.2f}<br>H: {h_bz:.2f}m",
@@ -425,7 +488,6 @@ with tab_perfil:
             align="center"
         )
         
-    # 4. Textos de Pendientes y Longitudes en los tramos
     for idx, r in df_res_p.iterrows():
         x_mid = (nodos_x[idx] + nodos_x[idx+1]) / 2.0
         y_mid = (cota_fondo_nodes[idx] + cota_fondo_nodes[idx+1]) / 2.0 - 0.30
@@ -443,7 +505,6 @@ with tab_perfil:
             borderwidth=1
         )
 
-    # Configuración de ejes e interfaz gráfica
     fig_cad.update_layout(
         title=dict(
             text=f"<b>PERFIL LONGITUDINAL - {col_elegido} ({buzones_names[0]} a {buzones_names[-1]})</b>",
@@ -466,30 +527,25 @@ with tab_perfil:
     
     st.plotly_chart(fig_cad, use_container_width=True)
     
-    # 5. GUITARRA / TABLA DE DATOS INFERIOR (Estilo Civil 3D)
     st.markdown("#### 📐 GUITARRA DE DATOS DE CAMPO (GUITARRA CAD)")
     
     filas_guitarra = []
     
-    # Progresiva
     row_prog = {"CONCEPTO": "PROGRESIVA (m)"}
     for i, x in enumerate(nodos_x):
         row_prog[f"{buzones_names[i]}"] = f"0+{x:06.2f}"
     filas_guitarra.append(row_prog)
     
-    # Cota Terreno
     row_ct = {"CONCEPTO": "COTA TERRENO (m)"}
     for i, ct in enumerate(cota_terreno_nodes):
         row_ct[f"{buzones_names[i]}"] = f"{ct:.2f}"
     filas_guitarra.append(row_ct)
     
-    # Cota Fondo
     row_cf = {"CONCEPTO": "COTA FONDO (m)"}
     for i, cf in enumerate(cota_fondo_nodes):
         row_cf[f"{buzones_names[i]}"] = f"{cf:.2f}"
     filas_guitarra.append(row_cf)
     
-    # Altura de Buzón
     row_h = {"CONCEPTO": "ALTURA BZ (m)"}
     for i in range(len(nodos_x)):
         row_h[f"{buzones_names[i]}"] = f"{(cota_terreno_nodes[i] - cota_fondo_nodes[i]):.2f}"
