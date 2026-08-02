@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import fsolve
 import plotly.graph_objects as go
-
+import io
 
 # -----------------------------------------------------------------------------
 # CONFIGURACION DE PAGINA Y ESTILOS
@@ -143,6 +143,71 @@ def estilar_cumplimiento(val):
         return "background-color: #D4EDDA; color: #155724; font-weight: bold;"
     else:
         return "background-color: #F8D7DA; color: #721C24; font-weight: bold;"
+
+
+# -----------------------------------------------------------------------------
+# CARGADOR Y PERSISTENCIA DE DATOS (EXCEL / CSV)
+# --------------------------------5---------------------------------------------
+OPCIONES_DIAMETROS = [0.1500, 0.1536, 0.2000, 0.2500, 0.3000, 0.3500, 0.4000, 0.4500, 0.5000]
+ARCHIVO_PROYECTO = "proyecto_alcantarillado.csv"
+
+def generar_300_tramos():
+    tramos = []
+    tramo_global_count = 1
+    
+    for num_colector in range(1, 51):
+        colector_tag = f"COLECTOR {num_colector}"
+        camara_inicio = (num_colector - 1) * 6 + 1
+        
+        for t_index in range(1, 7):
+            c_de = int(camara_inicio + (t_index - 1))
+            c_a = int(c_de + 1)
+            
+            cota_t_de = round(3830.00 - (t_index * 0.45) - (num_colector * 0.10), 4)
+            cota_t_a = round(3830.00 - ((t_index + 1) * 0.45) - (num_colector * 0.10), 4)
+            cota_f_de = round(cota_t_de - 1.20, 4)
+            cota_f_a = round(cota_t_a - 1.20, 4)
+            
+            tramos.append({
+                "COLECTOR": colector_tag,
+                "TRAMO_ID": f"T-{tramo_global_count:03d} (C-{c_de} a C-{c_a})",
+                "DE": c_de,
+                "A": c_a,
+                "Long_m": 66.0,
+                "Cota_Terreno_DE": cota_t_de,
+                "Cota_Terreno_A": cota_t_a,
+                "Cota_Fondo_DE": cota_f_de,
+                "Cota_Fondo_A": cota_f_a,
+                "D_comercial_m": 0.1536,
+                "Manning_n": 0.013,
+                "Q_min_RNE": 1.50
+            })
+            tramo_global_count += 1
+            
+    return pd.DataFrame(tramos)
+
+# Panel en la barra lateral para importar y exportar tus avances
+st.sidebar.markdown("### 📂 Gestión de Archivos")
+archivo_subido = st.sidebar.file_uploader("Cargar avance previo (Excel o CSV)", type=["csv", "xlsx"])
+
+if "df_tramos_base" not in st.session_state:
+    if archivo_subido is not None:
+        if archivo_subido.name.endswith('.csv'):
+            st.session_state.df_tramos_base = pd.read_csv(archivo_subido)
+        else:
+            st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
+    elif os.path.exists(ARCHIVO_PROYECTO):
+        st.session_state.df_tramos_base = pd.read_csv(ARCHIVO_PROYECTO)
+    else:
+        st.session_state.df_tramos_base = generar_300_tramos()
+else:
+    # Si el usuario sube un archivo nuevo después de iniciar la app
+    if archivo_subido is not None:
+        if archivo_subido.name.endswith('.csv'):
+            st.session_state.df_tramos_base = pd.read_csv(archivo_subido)
+        else:
+            st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
+
 
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
@@ -377,11 +442,26 @@ with tab_planilla:
     # =========================================================================
     # BOTÓN DE GUARDADO LOCAL (Añadido aquí)
     # =========================================================================
-    col1, col2 = st.columns([1, 4])
+col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("💾 Guardar Cambios en PC", use_container_width=True):
             df_edited.to_csv(ARCHIVO_PROYECTO, index=False)
             st.success("¡Guardado con éxito!")
+            
+    with col2:
+        # Botón para descargar en Excel directamente
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df_edited.to_excel(writer, index=False, sheet_name='Tramos')
+        buffer.seek(0)
+        
+        st.download_button(
+            label="📥 Descargar Planilla en Excel",
+            data=buffer,
+            file_name="proyecto_alcantarillado_avances.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
     # =========================================================================
 
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
