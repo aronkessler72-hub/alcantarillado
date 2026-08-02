@@ -90,6 +90,26 @@ def generar_300_tramos():
 if "df_tramos_base" not in st.session_state:
     st.session_state.df_tramos_base = generar_300_tramos()
 
+# PALETA DE COLORES PASTEL PARA AGRUPAR COLECTORES
+PALETA_COLECTORES = [
+    "#e6f2ff", "#e6ffe6", "#fff0f5", "#f0f8ff", "#fff8dc",
+    "#f3e5f5", "#e8f8f5", "#fef9e7", "#ebf5fb", "#fced4c2"
+]
+
+def estilar_colector(val):
+    try:
+        num = int(str(val).replace("COLECTOR", "").strip())
+        color = PALETA_COLECTORES[(num - 1) % len(PALETA_COLECTORES)]
+        return f"background-color: {color}; color: #1c2833; font-weight: bold;"
+    except:
+        return ""
+
+def estilar_cumplimiento(val):
+    if str(val).startswith("CUMPLE"):
+        return "background-color: #d4edda; color: #155724; font-weight: bold;"
+    else:
+        return "background-color: #f8d7da; color: #721c24; font-weight: bold;"
+
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
 # -----------------------------------------------------------------------------
@@ -203,20 +223,13 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
         "Cumple_Tension": cumple_tau
     }
 
-# FUNCION PARA ESTILAR CUMPLIMIENTOS EN VERDE Y ROJO
-def estilar_cumplimiento(val):
-    if str(val).startswith("CUMPLE"):
-        return "background-color: #d4edda; color: #155724; font-weight: bold;"
-    else:
-        return "background-color: #f8d7da; color: #721c24; font-weight: bold;"
-
 # =============================================================================
 # PESTANA 2: PLANILLA DE CALCULO EN VIVO
 # =============================================================================
 with tab_planilla:
     st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 COLECTORES / 300 TRAMOS)")
     
-    # 1. Renderizar data_editor con TRAMO_ID bloqueado para edición
+    # 1. Editor con TRAMO_ID deshabilitado
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
         num_rows="dynamic",
@@ -225,24 +238,21 @@ with tab_planilla:
         key="editor_300_key"
     )
     
-    # 2. Recalcular dinámicamente TRAMO_ID según las cámaras DE y A elegidas
+    # 2. Recalcular TRAMO_ID según cámaras DE y A
     df_edited['TRAMO_ID'] = [
         f"T-{(idx + 1):03d} (C-{int(row['DE'])} a C-{int(row['A'])})"
         for idx, row in df_edited.iterrows()
     ]
     
-    # Guardar cambios actualizados en session_state
     st.session_state.df_tramos_base = df_edited
 
-    # 3. Verificación de tramos duplicados (Misma cámara DE y A)
-    pares_camaras = df_edited[['DE', 'A']].values
+    # 3. Verificación de tramos duplicados
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
-    
     if not duplicados.empty:
         tramos_dupl_str = ", ".join(duplicados['TRAMO_ID'].unique())
         st.error(f"⚠️ **ALERTA DE TRAMOS DUPLICADOS DETECTADA**: Se encontraron cámaras conexas repetidas en: **{tramos_dupl_str}**. Por favor corrige las cámaras 'DE' y 'A'.")
 
-    # 4. Cálculo dinámico de la planilla hidráulica
+    # 4. Cálculo de la planilla
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
         l_acum = 0.0
@@ -255,11 +265,10 @@ with tab_planilla:
     
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
     
-    # Aplicar resaltado condicional Verde/Rojo a las columnas de comprobación
-    df_res_styled = df_res_completo.style.map(
-        estilar_cumplimiento, 
-        subset=['Cumple_Velocidad', 'Cumple_Tension']
-    )
+    # Estilizado de la tabla Solver (Colector agrupado por color + Cumplimientos verde/rojo)
+    df_res_styled = df_res_completo.style \
+        .map(estilar_colector, subset=['COLECTOR']) \
+        .map(estilar_cumplimiento, subset=['Cumple_Velocidad', 'Cumple_Tension'])
     
     st.dataframe(df_res_styled, use_container_width=True)
 
@@ -296,11 +305,6 @@ with tab_seccion:
             {"PARAMETRO": "Cumple Velocidad", "VALOR": data_t['Cumple_Velocidad']},
             {"PARAMETRO": "Cumple Tension Tractiva", "VALOR": data_t['Cumple_Tension']}
         ])
-        
-        df_tabla_styled = df_tabla_excel.style.map(
-            estilar_cumplimiento,
-            subset=['VALOR']
-        )
         st.dataframe(df_tabla_excel, use_container_width=True, hide_index=True)
         
     with col_t2:
