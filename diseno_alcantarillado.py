@@ -1,4 +1,3 @@
-
     st.dataframe(
         df_res.style.applymap(destacar_estado, subset=['Estado']),
         use_container_width=True
