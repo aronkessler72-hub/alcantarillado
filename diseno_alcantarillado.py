@@ -44,7 +44,7 @@ st.markdown("""
 </style>
 <div class="header-box">
     <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CALCULO HIDRAULICO DINAMICO COMPLETO (PRECISION 4 DECIMALES)</div>
+    <div class="header-subtitle">CALCULO HIDRAULICO</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -114,22 +114,22 @@ def estilar_cumplimiento(val):
 # PESTANAS PRINCIPALES
 # -----------------------------------------------------------------------------
 tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
-    "1. PARAMETROS DE DISENO", 
-    "2. PLANILLA HIDRAULICA (SOLVER COMPLETO)", 
+    "1. PARÁMETROS DE DISEÑO", 
+    "2. PLANILLA HIDRÁULICA", 
     "3. DETALLE DE TRAMO Y TIRANTE DE AGUA",
-    "4. PERFIL LONGITUDINAL TIPO CAD"
+    "4. PERFIL LONGITUDINAL"
 ])
 
 # =============================================================================
 # PESTANA 1: PARAMETROS GENERALES DINAMICOS
 # =============================================================================
 with tab_param:
-    st.subheader("PARAMETROS GENERALES DE DISENO Y CAUDAL UNITARIO")
+    st.subheader("PARÁMETROS GENERALES DE DISEÑO Y CAUDAL UNITARIO")
     
     col_p1, col_p2 = st.columns(2)
     
     with col_p1:
-        st.markdown("##### 📌 Datos Poblanos y Básicos")
+        st.markdown("##### Datos Básicos")
         periodo = st.number_input("Periodo de diseño (años)", value=15)
         pob_actual = st.number_input("Población actual (hab)", value=4804)
         pob_futura = st.number_input("Población futura (hab)", value=7286)
@@ -138,7 +138,7 @@ with tab_param:
         long_total = st.number_input("Longitud total de la red (m)", value=19800.00, format="%.2f")
         
         st.markdown("---")
-        st.markdown("##### ⚠️ 1. Selección de Conexiones Erradas ($Q_{CE}$)")
+        st.markdown("##### 1. Selección de Conexiones Erradas ($Q_{CE}$)")
         cultura_sanitaria = st.selectbox(
             "Cultura Sanitaria de la Población:",
             ["Alta Cultura Sanitaria (5%)", "Media Cultura Sanitaria (7.5%)", "Baja / Nula Cultura Sanitaria (10%)", "Personalizado"]
@@ -156,7 +156,7 @@ with tab_param:
         coef_erradas = pct_erradas / 100.0
 
     with col_p2:
-        st.markdown("##### 💧 2. Selección de Infiltración Lineal ($q_{inf}$)")
+        st.markdown("#####2. Selección de Infiltración Lineal ($q_{inf}$)")
         
         nivel_freatico = st.selectbox("Nivel Freático en el área:", ["Ausente / Bajo (Por debajo del colector)", "Alto (Colector bajo agua subterránea)"])
         material_tub = st.selectbox("Material de Tubería y Junta:", ["PVC / Plástico con anillo de goma (Estanco)", "Hormigón / Concreto rígido", "Personalizado"])
@@ -273,35 +273,35 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     
     return {
         "COLECTOR": row['COLECTOR'],
-        "CAMARA DE": row['DE'],
-        "CAMARA A": row['A'],
+        "CÁMARA DE": row['DE'],
+        "CÁMARA A": row['A'],
         "NOMBRE ID": row['TRAMO_ID'],
         "LONGITUD TRIBUTARIA PROPIA (m)": f"{l_propia:.4f}",
         "LONG TRIBUTARIA ACUMULADA (m)": f"{long_acum:.4f}",
-        "MAXIMA AGUA RESIDUAL (Q_unit)": f"{q_unit:.4f}",
+        "MÁXIMA AGUA RESIDUAL (Q_unit)": f"{q_unit:.4f}",
         "AGUA RESIDUAL PROPIA (L/s)": f"{q_res_propio:.4f}",
-        "AGUA RESIDUAL ACUMULADA (L/s)": f"{q_res_acum:.4f}",
+        "AGUA RESIDUAL ACUMULADO (L/s)": f"{q_res_acum:.4f}",
         "CONEXIONES ERRADAS PROPIA (L/s)": f"{q_err_propio:.4f}",
         "CONEXIONES ERRADAS ACUMULADO (L/s)": f"{q_err_acum:.4f}",
-        "INFILTRACION PROPIO (L/s)": f"{q_inf_propio:.4f}",
-        "INFILTRACION ACUMULADO (L/s)": f"{q_inf_acum:.4f}",
+        "INFILTRACIÓN PROPIA (L/s)": f"{q_inf_propio:.4f}",
+        "INFILTRACIÓN ACUMULADO (L/s)": f"{q_inf_acum:.4f}",
         "CAUDAL TOTAL (L/s)": f"{q_diseno_ls:.4f}",
         "Qi (L/s)": f"{q_i_ls:.4f}",
         "Qf (L/s)": f"{q_f_ls:.4f}",
         "COTA FONDO INICIAL (m)": f"{c_f_de:.4f}",
         "COTA FONDO FINAL (m)": f"{c_f_a:.4f}",
         "PENDIENTE (m/m)": f"{S:.4f}",
-        "DIAMETRO CALCULADO (m)": f"{D_calc:.4f}",
-        "DIAMETRO COMERCIAL INTERIOR (m)": f"{D_com:.4f}",
+        "DIÁMETRO CALCULADO (m)": f"{D_calc:.4f}",
+        "DIÁMETRO COMERCIAL INTERIOR (m)": f"{D_com:.4f}",
         "CAPACIDAD AL 75% (L/s)": f"{(Q_75 * 1000.0):.4f}",
         "VELOCIDAD AL 75% (m/s)": f"{V_75:.4f}",
         "TIRANTE (m)": f"{tirante:.4f}",
-        "RELACION Y/D": f"{relacion_y_D:.4f}",
+        "RELACIÓN Y/D": f"{relacion_y_D:.4f}",
         "VELOCIDAD REAL (m/s)": f"{v_real:.4f}",
-        "RADIO HIDRAULICO REAL (m)": f"{r_hid:.4f}",
-        "TENSION TRACTIVA (Pa)": f"{tau:.4f}",
-        "VALIDACION VELOCIDAD": cumple_v,
-        "VALIDACION TENSION TRACTIVA": cumple_tau,
+        "RADIO HIDRÁULICO REAL (m)": f"{r_hid:.4f}",
+        "TENSIÓN TRACTIVA (Pa)": f"{tau:.4f}",
+        "VALIDACIÓN VELOCIDAD": cumple_v,
+        "VALIDACIÓN TENSIÓN TRACTIVA": cumple_tau,
         # Variables numéricas internas para gráfica
         "D_m": D_com,
         "S_m/m": S,
@@ -314,7 +314,7 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
 # PESTANA 2: PLANILLA DE CALCULO EN VIVO
 # =============================================================================
 with tab_planilla:
-    st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (SOLVER MULTI-COLUMNA)")
+    st.subheader("PLANILLA DE CÁLCULO HIDRÁULICO PARA UN PROYECTO DE ALCANTARILLADO SANITARIO")
     
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
@@ -357,28 +357,28 @@ with tab_planilla:
             
     df_res_completo = pd.DataFrame(resultados_lista)
     
-    st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
+    st.markdown("### RESULTADOS AUTOMÁTICOS DEL SOLVER")
     
     columnas_solver_ver = [
-        "COLECTOR", "CAMARA DE", "CAMARA A", "NOMBRE ID",
+        "COLECTOR", "CÁMARA DE", "CÁMARA A", "NOMBRE ID",
         "LONGITUD TRIBUTARIA PROPIA (m)", "LONG TRIBUTARIA ACUMULADA (m)",
-        "MAXIMA AGUA RESIDUAL (Q_unit)", "AGUA RESIDUAL PROPIA (L/s)", "AGUA RESIDUAL ACUMULADA (L/s)",
+        "MÁXIMA AGUA RESIDUAL (Q_unit)", "AGUA RESIDUAL PROPIA (L/s)", "AGUA RESIDUAL ACUMULADO (L/s)",
         "CONEXIONES ERRADAS PROPIA (L/s)", "CONEXIONES ERRADAS ACUMULADO (L/s)",
-        "INFILTRACION PROPIO (L/s)", "INFILTRACION ACUMULADO (L/s)",
+        "INFILTRACIÓN PROPIA (L/s)", "INFILTRACIÓN ACUMULADO (L/s)",
         "CAUDAL TOTAL (L/s)", "Qi (L/s)", "Qf (L/s)",
         "COTA FONDO INICIAL (m)", "COTA FONDO FINAL (m)",
-        "PENDIENTE (m/m)", "DIAMETRO CALCULADO (m)", "DIAMETRO COMERCIAL INTERIOR (m)",
+        "PENDIENTE (m/m)", "DIÁMETRO CALCULADO (m)", "DIÁMETRO COMERCIAL INTERIOR (m)",
         "CAPACIDAD AL 75% (L/s)", "VELOCIDAD AL 75% (m/s)",
-        "TIRANTE (m)", "RELACION Y/D", "VELOCIDAD REAL (m/s)",
-        "RADIO HIDRAULICO REAL (m)", "TENSION TRACTIVA (Pa)",
-        "VALIDACION VELOCIDAD", "VALIDACION TENSION TRACTIVA"
+        "TIRANTE (m)", "RELACIÓN Y/D", "VELOCIDAD REAL (m/s)",
+        "RADIO HIDRÁULICO REAL (m)", "TENSIÓN TRACTIVA (Pa)",
+        "VALIDACIÓN VELOCIDAD", "VALIDACIÓN TENSIÓN TRACTIVA"
     ]
     
     df_solver_view = df_res_completo[columnas_solver_ver]
     
     df_res_styled = df_solver_view.style \
         .map(estilar_colector, subset=['COLECTOR']) \
-        .map(estilar_cumplimiento, subset=['VALIDACION VELOCIDAD', 'VALIDACION TENSION TRACTIVA'])
+        .map(estilar_cumplimiento, subset=['VALIDACIÓN VELOCIDAD', 'VALIDACIÓN TENSIÓN TRACTIVA'])
     
     st.dataframe(df_res_styled, use_container_width=True)
 
@@ -386,7 +386,7 @@ with tab_planilla:
 # PESTANA 3: DETALLE DE TRAMO Y TIRANTE
 # =============================================================================
 with tab_seccion:
-    st.subheader("DETALLE DE TRAMO Y VISUALIZACION DEL TIRANTE DE AGUA")
+    st.subheader("DETALLE DE TRAMO Y VISUALIZACIÓN DEL TIRANTE DE AGUA")
     
     lista_tramos_opciones = df_res_completo['NOMBRE ID'].tolist()
     tramo_seleccionado = st.selectbox("SELECCIONAR EL TRAMO A ANALIZAR:", lista_tramos_opciones)
@@ -402,15 +402,15 @@ with tab_seccion:
             {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONG TRIBUTARIA ACUMULADA (m)']},
             {"PARAMETRO": "Caudal Total (L/s)", "VALOR": data_t['CAUDAL TOTAL (L/s)']},
             {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['PENDIENTE (m/m)']},
-            {"PARAMETRO": "Diametro Calculado (m)", "VALOR": data_t['DIAMETRO CALCULADO (m)']},
-            {"PARAMETRO": "Diametro Comercial Interior (m)", "VALOR": data_t['DIAMETRO COMERCIAL INTERIOR (m)']},
+            {"PARAMETRO": "Diametro Calculado (m)", "VALOR": data_t['DIÁMETRO CALCULADO (m)']},
+            {"PARAMETRO": "Diametro Comercial Interior (m)", "VALOR": data_t['DIÁMETRO COMERCIAL INTERIOR (m)']},
             {"PARAMETRO": "Velocidad Real (m/s)", "VALOR": data_t['VELOCIDAD REAL (m/s)']},
             {"PARAMETRO": "Tirante (m)", "VALOR": data_t['TIRANTE (m)']},
-            {"PARAMETRO": "Relacion Y/D", "VALOR": data_t['RELACION Y/D']},
-            {"PARAMETRO": "Radio Hidraulico Real (m)", "VALOR": data_t['RADIO HIDRAULICO REAL (m)']},
-            {"PARAMETRO": "Tension Tractiva (Pa)", "VALOR": data_t['TENSION TRACTIVA (Pa)']},
-            {"PARAMETRO": "Validacion Velocidad", "VALOR": data_t['VALIDACION VELOCIDAD']},
-            {"PARAMETRO": "Validacion Tension Tractiva", "VALOR": data_t['VALIDACION TENSION TRACTIVA']}
+            {"PARAMETRO": "Relacion Y/D", "VALOR": data_t['RELACIÓN Y/D']},
+            {"PARAMETRO": "Radio Hidraulico Real (m)", "VALOR": data_t['RADIO HIDRÁULICO REAL (m)']},
+            {"PARAMETRO": "Tension Tractiva (Pa)", "VALOR": data_t['TENSIÓN TRACTIVA (Pa)']},
+            {"PARAMETRO": "Validacion Velocidad", "VALOR": data_t['VALIDACIÓN VELOCIDAD']},
+            {"PARAMETRO": "Validacion Tension Tractiva", "VALOR": data_t['VALIDACIÓN TENSIÓN TRACTIVA']}
         ])
         st.dataframe(df_tabla_excel, use_container_width=True, hide_index=True)
         
@@ -468,7 +468,7 @@ with tab_seccion:
 # PESTANA 4: PERFIL LONGITUDINAL ESTILO AUTOCAD / CIVIL 3D
 # =============================================================================
 with tab_perfil:
-    st.subheader("PERFIL LONGITUDINAL CAD / CIVIL 3D")
+    st.subheader("PERFIL LONGITUDINAL")
     
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
     col_elegido = st.selectbox("SELECCIONAR COLECTOR PARA EL PERFIL:", lista_cols)
