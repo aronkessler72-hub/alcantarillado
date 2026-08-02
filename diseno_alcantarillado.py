@@ -169,7 +169,7 @@ with tab_param:
         coef_erradas = pct_erradas / 100.0
 
     with col_p2:
-        st.markdown("#####2. Selección de Infiltración Lineal ($q_{inf}$)")
+        st.markdown("##### 2. Selección de Infiltración Lineal ($q_{inf}$)")
         
         nivel_freatico = st.selectbox("Nivel Freático en el área:", ["Ausente / Bajo (Por debajo del colector)", "Alto (Colector bajo agua subterránea)"])
         material_tub = st.selectbox("Material de Tubería y Junta:", ["PVC / Plástico con anillo de goma (Estanco)", "Hormigón / Concreto rígido", "Personalizado"])
