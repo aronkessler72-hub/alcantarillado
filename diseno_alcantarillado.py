@@ -44,19 +44,17 @@ st.markdown("""
 </style>
 <div class="header-box">
     <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CALCULO HIDRAULICO (50 COLECTORES - 300 TRAMOS)</div>
+    <div class="header-subtitle">CALCULO HIDRAULICO DINAMICO (50 COLECTORES - 300 TRAMOS)</div>
 </div>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# GENERACION DE DATASET INICIAL DE 50 COLECTORES (300 TRAMOS)
+# INICIALIZACION DE DATOS DE BASE EN SESSION_STATE
 # -----------------------------------------------------------------------------
-@st.cache_data
 def generar_300_tramos():
     tramos = []
     tramo_global_count = 1
     
-    # 50 colectores, 6 tramos por colector = 300 tramos
     for num_colector in range(1, 51):
         colector_tag = f"COLECTOR {num_colector}"
         camara_inicio = (num_colector - 1) * 6 + 1
@@ -73,8 +71,8 @@ def generar_300_tramos():
             tramos.append({
                 "COLECTOR": colector_tag,
                 "TRAMO_ID": f"T-{tramo_global_count:03d} (C-{c_de} a C-{c_a})",
-                "DE": c_de,
-                "A": c_a,
+                "DE": int(c_de),
+                "A": int(c_a),
                 "Long_m": 66.0,
                 "Cota_Terreno_DE": cota_t_de,
                 "Cota_Terreno_A": cota_t_a,
@@ -89,7 +87,8 @@ def generar_300_tramos():
             
     return pd.DataFrame(tramos)
 
-df_tramos_base = generar_300_tramos()
+if "df_tramos_base" not in st.session_state:
+    st.session_state.df_tramos_base = generar_300_tramos()
 
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
@@ -153,7 +152,7 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     D = float(row['D_m'])
     n = float(row['Manning_n'])
     
-    K = (n * q_diseno_m3s) / (np.sqrt(S) * (D ** (8/3)))
+    K = (n * q_diseno_m3s) / (np.sqrt(S) * (D ** (8/3))) if (S > 0 and D > 0) else 0.01
     
     def func_solver(theta):
         if theta <= 0.0001: return 1e6
@@ -177,7 +176,6 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     
     tau = 9810.0 * r_hid * S
     
-    # Verificaciones normativas
     cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else ("NO CUMPLE (Baja V)" if v_real < 0.60 else "NO CUMPLE (Alta V)")
     cumple_tau = "CUMPLE" if tau >= 1.00 else "NO CUMPLE (< 1 Pa)"
     
@@ -206,13 +204,23 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
     }
 
 # =============================================================================
-# PESTANA 2: PLANILLA DE CALCULO EN VIVO (50 COLECTORES / 300 TRAMOS)
+# PESTANA 2: PLANILLA DE CALCULO EN VIVO (SINCRONIZADA TOTALMENTE)
 # =============================================================================
 with tab_planilla:
     st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 COLECTORES / 300 TRAMOS)")
     
-    df_edited = st.data_editor(df_tramos_base, num_rows="dynamic", use_container_width=True, key="editor_300")
+    # Renderizar editor interactivo vinculándolo directamente a session_state
+    df_edited = st.data_editor(
+        st.session_state.df_tramos_base,
+        num_rows="dynamic",
+        use_container_width=True,
+        key="editor_300_key"
+    )
+    
+    # Guardar cambios inmediatamente en el estado global
+    st.session_state.df_tramos_base = df_edited
 
+    # Recalcular automáticamente en vivo en cada iteración/cambio de celda
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
         l_acum = 0.0
@@ -222,11 +230,12 @@ with tab_planilla:
             resultados_lista.append(res)
             
     df_res_completo = pd.DataFrame(resultados_lista)
+    
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
     st.dataframe(df_res_completo, use_container_width=True)
 
 # =============================================================================
-# PESTANA 3: DETALLE DE TRAMO SELECCIONADO Y GRAFICO DE TIRANTE (SECCION CIRCULAR)
+# PESTANA 3: DETALLE DE TRAMO SELECCIONADO Y GRAFICO DE TIRANTE
 # =============================================================================
 with tab_seccion:
     st.subheader("DETALLE DE TRAMO Y VISUALIZACION DEL TIRANTE DE AGUA")
@@ -241,6 +250,7 @@ with tab_seccion:
     with col_t1:
         st.markdown(f"#### PARAMETROS DEL {tramo_seleccionado}")
         df_tabla_excel = pd.DataFrame([
+            {"PARAMETRO": "Longitud (m)", "VALOR": data_t['Long_m']},
             {"PARAMETRO": "Diametro (m)", "VALOR": data_t['D_m']},
             {"PARAMETRO": "Caudal (m3/s)", "VALOR": data_t['Q_m3/s']},
             {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['S_m/m']},
@@ -318,7 +328,7 @@ with tab_perfil:
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
     col_elegido = st.selectbox("SELECCIONAR COLECTOR:", lista_cols)
     
-    df_p = df_edited[df_edited['COLECTOR'] == col_elegido].reset_index(drop=True)
+    df_p = st.session_state.df_tramos_base[st.session_state.df_tramos_base['COLECTOR'] == col_elegido].reset_index(drop=True)
     
     progresivas = [0.0]
     p_terreno = [float(df_p.iloc[0]['Cota_Terreno_DE'])]
