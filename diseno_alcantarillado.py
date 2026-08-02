@@ -374,6 +374,16 @@ with tab_planilla:
     
     st.session_state.df_tramos_base = df_edited
 
+    # =========================================================================
+    # BOTÓN DE GUARDADO LOCAL (Añadido aquí)
+    # =========================================================================
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        if st.button("💾 Guardar Cambios en PC", use_container_width=True):
+            df_edited.to_csv(ARCHIVO_PROYECTO, index=False)
+            st.success("¡Guardado con éxito!")
+    # =========================================================================
+
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
     if not duplicados.empty:
         tramos_dupl_str = ", ".join(duplicados['TRAMO_ID'].unique())
