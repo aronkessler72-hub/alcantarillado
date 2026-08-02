@@ -440,9 +440,9 @@ with tab_planilla:
     st.session_state.df_tramos_base = df_edited
 
     # =========================================================================
-    # BOTÓN DE GUARDADO LOCAL (Añadido aquí)
+    # BOTÓN DE GUARDADO LOCAL
     # =========================================================================
-col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("💾 Guardar Cambios en PC", use_container_width=True):
             df_edited.to_csv(ARCHIVO_PROYECTO, index=False)
@@ -462,7 +462,6 @@ col1, col2 = st.columns([1, 1])
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
-    # =========================================================================
 
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
     if not duplicados.empty:
