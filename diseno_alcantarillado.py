@@ -44,7 +44,10 @@ st.markdown("""
 </style>
 <div class="header-box">
     <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CALCULO HIDRAULICO</div>
+    <div class="header-subtitle">CÁLCULO HIDRÁULICO</div>
+    <div class="header-subtitle">POR: Condori Bustincio, Norka Guadalupe  240852</div>
+    <div class="header-subtitle">CURSO: Abastecimiento de Agua y Alcantarillado</div>
+    <div class="header-subtitle">DOCENTE: Fernández Sila, Guillermo Nestor</div>
 </div>
 """, unsafe_allow_html=True)
 
