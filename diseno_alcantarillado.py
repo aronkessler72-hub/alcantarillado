@@ -20,36 +20,45 @@ st.markdown("""
         font-family: 'Consolas', 'Roboto Mono', 'Courier New', monospace !important;
         font-weight: 700 !important;
     }
-    
-    .header-box {
-        background: #8B0000;
-        color: white;
-        padding: 18px;
-        border: 2px solid #5A0000;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    .header-title {
-        font-size: 24px;
-        font-weight: 900;
-        letter-spacing: 1.5px;
-        margin: 0;
-        text-transform: uppercase;
-    }
-    .header-subtitle {
-        font-size: 13px;
-        margin-top: 5px;
-        letter-spacing: 1px;
-    }
 </style>
-<div class="header-box">
-    <div class="header-title">SISTEMA DE ALCANTARILLADO SANITARIO</div>
-    <div class="header-subtitle">CÁLCULO HIDRÁULICO</div>
-    <div class="header-subtitle">POR: Condori Bustincio, Norka Guadalupe  240852</div>
-    <div class="header-subtitle">CURSO: Abastecimiento de Agua y Alcantarillado</div>
-    <div class="header-subtitle">DOCENTE: Fernández Sila, Guillermo Nestor</div>
-</div>
 """, unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# ENCABEZADO CON LOGOS Y DATOS PEQUEÑOS
+# -----------------------------------------------------------------------------
+col_logo_izq, col_titulo, col_logo_der = st.columns([1.5, 7, 1.5])
+
+with col_logo_izq:
+    st.image("logo_izquierda.png", use_container_width=True) 
+
+with col_titulo:
+    st.markdown("""
+    <div style="
+        background-color: #8B0000;
+        color: white;
+        padding: 12px 15px;
+        border: 2px solid #5A0000;
+        text-align: center;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    ">
+        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">
+            SISTEMA DE ALCANTARILLADO SANITARIO
+        </div>
+        <div style="font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #E0E0E0; text-transform: uppercase;">
+            CÁLCULO HIDRÁULICO
+        </div>
+        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 8px 0;">
+        <div style="font-size: 9.5px; font-weight: 400; line-height: 1.3; color: #F0F0F0; opacity: 0.9;">
+            POR: Condori Bustincio, Norka Guadalupe 240852 &nbsp;|&nbsp; 
+            CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp; 
+            DOCENTE: Fernández Sila, Guillermo Nestor
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_logo_der:
+    st.image("logo_derecha.png", use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # INICIALIZACION DE DATOS EN SESSION_STATE
