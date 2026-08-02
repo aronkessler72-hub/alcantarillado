@@ -480,10 +480,14 @@ with tab_seccion:
             ))
 
         fig_pipe.update_layout(
-            title=f"Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.4f} m)",
+            title=dict(
+                text=f"<b>Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.4f} m)</b>",
+                font=dict(size=20)  # <-- Aumenta el tamaño de la letra del título
+            ),
             xaxis=dict(range=[-R*1.2, R*1.2], constrain='domain', visible=False),
             yaxis=dict(range=[-R*0.2, D_val*1.2], scaleanchor="x", scaleratio=1, visible=False),
-            height=400,
+            height=600,            # <-- Aumenta la altura del gráfico (de 400 a 600)
+            margin=dict(l=20, r=20, t=50, b=20), # <-- Quita bordes blancos innecesarios
             template="plotly_white",
             showlegend=True
         )
