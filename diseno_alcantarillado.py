@@ -90,16 +90,9 @@ def generar_300_tramos():
 if "df_tramos_base" not in st.session_state:
     st.session_state.df_tramos_base = generar_300_tramos()
 
-# PALETA EXCLUSIVAMENTE DE COLORES CLAROS / PASTEL
 PALETA_COLECTORES_CLAROS = [
-    "#EBF5FB",  # Azul ultra claro
-    "#E8F8F5",  # Menta claro
-    "#FEF9E7",  # Crema suave
-    "#F5EEF8",  # Lila pastel
-    "#FBEEE6",  # Melocotón claro
-    "#EAEDED",  # Gris perla claro
-    "#EAF2F8",  # Hielo claro
-    "#FEF5E7"   # Marfil suave
+    "#EBF5FB", "#E8F8F5", "#FEF9E7", "#F5EEF8",
+    "#FBEEE6", "#EAEDED", "#EAF2F8", "#FEF5E7"
 ]
 
 def estilar_colector(val):
@@ -123,7 +116,7 @@ tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
     "1. PARAMETROS DE DISENO", 
     "2. PLANILLA HIDRAULICA (300 TRAMOS)", 
     "3. DETALLE DE TRAMO Y TIRANTE DE AGUA",
-    "4. PERFIL LONGITUDINAL"
+    "4. PERFIL LONGITUDINAL TIPO CAD"
 ])
 
 # =============================================================================
@@ -235,7 +228,6 @@ def calcular_hidraulica_tramo(row, q_unit, c_erradas, c_infilt, long_acum):
 with tab_planilla:
     st.subheader("PLANILLA DE CALCULO HIDRAULICO COMPLETA (50 COLECTORES / 300 TRAMOS)")
     
-    # 1. Editor con TRAMO_ID deshabilitado
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
         num_rows="dynamic",
@@ -244,7 +236,6 @@ with tab_planilla:
         key="editor_300_key"
     )
     
-    # 2. Recalcular TRAMO_ID según cámaras DE y A
     df_edited['TRAMO_ID'] = [
         f"T-{(idx + 1):03d} (C-{int(row['DE'])} a C-{int(row['A'])})"
         for idx, row in df_edited.iterrows()
@@ -252,13 +243,11 @@ with tab_planilla:
     
     st.session_state.df_tramos_base = df_edited
 
-    # 3. Verificación de tramos duplicados
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
     if not duplicados.empty:
         tramos_dupl_str = ", ".join(duplicados['TRAMO_ID'].unique())
         st.error(f"⚠️ **ALERTA DE TRAMOS DUPLICADOS DETECTADA**: Se encontraron cámaras conexas repetidas en: **{tramos_dupl_str}**. Por favor corrige las cámaras 'DE' y 'A'.")
 
-    # 4. Cálculo de la planilla
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
         l_acum = 0.0
@@ -271,7 +260,6 @@ with tab_planilla:
     
     st.markdown("### RESULTADOS AUTOMATICOS DEL SOLVER")
     
-    # Aplicar estilos con paleta pastel clara
     df_res_styled = df_res_completo.style \
         .map(estilar_colector, subset=['COLECTOR']) \
         .map(estilar_cumplimiento, subset=['Cumple_Velocidad', 'Cumple_Tension'])
@@ -364,36 +352,148 @@ with tab_seccion:
         st.plotly_chart(fig_pipe, use_container_width=True)
 
 # =============================================================================
-# PESTANA 4: PERFIL LONGITUDINAL
+# PESTANA 4: PERFIL LONGITUDINAL ESTILO AUTOCAD / CIVIL 3D
 # =============================================================================
 with tab_perfil:
-    st.subheader("PERFILES LONGITUDINALES POR COLECTOR")
+    st.subheader("PERFIL LONGITUDINAL CAD / CIVIL 3D")
     
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
-    col_elegido = st.selectbox("SELECCIONAR COLECTOR:", lista_cols)
+    col_elegido = st.selectbox("SELECCIONAR COLECTOR PARA EL PERFIL:", lista_cols)
     
+    # Filtrar tramos del colector seleccionado
     df_p = st.session_state.df_tramos_base[st.session_state.df_tramos_base['COLECTOR'] == col_elegido].reset_index(drop=True)
+    df_res_p = df_res_completo[df_res_completo['COLECTOR'] == col_elegido].reset_index(drop=True)
     
-    progresivas = [0.0]
-    p_terreno = [float(df_p.iloc[0]['Cota_Terreno_DE'])]
-    p_fondo = [float(df_p.iloc[0]['Cota_Fondo_DE'])]
+    # Construir vectores de nodos/buzones
+    nodos_x = [0.0]
+    cota_terreno_nodes = [float(df_p.iloc[0]['Cota_Terreno_DE'])]
+    cota_fondo_nodes = [float(df_p.iloc[0]['Cota_Fondo_DE'])]
+    buzones_names = [f"BZ-{int(df_p.iloc[0]['DE'])}"]
     
     p_acum = 0.0
     for idx, r in df_p.iterrows():
         p_acum += float(r['Long_m'])
-        progresivas.append(p_acum)
-        p_terreno.append(float(r['Cota_Terreno_A']))
-        p_fondo.append(float(r['Cota_Fondo_A']))
-        
-    fig_prof = go.Figure()
-    fig_prof.add_trace(go.Scatter(x=progresivas, y=p_terreno, mode='lines+markers', name='TERRENO', line=dict(color='green', width=2)))
-    fig_prof.add_trace(go.Scatter(x=progresivas, y=p_fondo, mode='lines+markers', name='FONDO TUBERIA', line=dict(color='orange', width=2.5)))
+        nodos_x.append(p_acum)
+        cota_terreno_nodes.append(float(r['Cota_Terreno_A']))
+        cota_fondo_nodes.append(float(r['Cota_Fondo_A']))
+        buzones_names.append(f"BZ-{int(r['A'])}")
+
+    fig_cad = go.Figure()
     
-    fig_prof.update_layout(
-        title=f"PERFIL LONGITUDINAL {col_elegido}",
-        xaxis_title="Progresiva (m)",
-        yaxis_title="Cota (M.S.N.M)",
+    # 1. Terreno Natural (Verde)
+    fig_cad.add_trace(go.Scatter(
+        x=nodos_x, y=cota_terreno_nodes,
+        mode='lines',
+        line=dict(color='#228B22', width=2),
+        name='Terreno Natural'
+    ))
+    
+    # 2. Tubería / Fondo (Marrón Doble / Tubería gruesa)
+    fig_cad.add_trace(go.Scatter(
+        x=nodos_x, y=cota_fondo_nodes,
+        mode='lines',
+        line=dict(color='#8B4513', width=5),
+        name='Tubería (Fondo)'
+    ))
+    
+    # 3. Dibujar Buzones (Columnas/Estructuras Grises en los nodos)
+    ancho_bz = (max(nodos_x) if max(nodos_x) > 0 else 100) * 0.008
+    for i in range(len(nodos_x)):
+        x_c = nodos_x[i]
+        y_bottom = cota_fondo_nodes[i]
+        y_top = cota_terreno_nodes[i]
+        h_bz = y_top - y_bottom
+        
+        # Rectángulo del buzón
+        fig_cad.add_shape(
+            type="rect",
+            x0=x_c - ancho_bz, x1=x_c + ancho_bz,
+            y0=y_bottom, y1=y_top,
+            fillcolor="rgba(128, 128, 128, 0.4)",
+            line=dict(color="black", width=1.5)
+        )
+        
+        # Cuadro de texto sobre el buzón con CT, CF y H
+        fig_cad.add_annotation(
+            x=x_c, y=y_top + 0.35,
+            text=f"<b>{buzones_names[i]}</b><br>CT: {y_top:.2f}<br>CF: {y_bottom:.2f}<br>H: {h_bz:.2f}m",
+            showarrow=False,
+            font=dict(size=9, color="black"),
+            bgcolor="#FFFFCC",
+            bordercolor="gray",
+            borderwidth=1,
+            align="center"
+        )
+        
+    # 4. Textos de Pendientes y Longitudes en los tramos
+    for idx, r in df_res_p.iterrows():
+        x_mid = (nodos_x[idx] + nodos_x[idx+1]) / 2.0
+        y_mid = (cota_fondo_nodes[idx] + cota_fondo_nodes[idx+1]) / 2.0 - 0.30
+        pend_pct = r['S_m/m'] * 100.0
+        long_m = r['Long_m']
+        d_mm = float(r['D_m']) * 1000.0
+        
+        fig_cad.add_annotation(
+            x=x_mid, y=y_mid,
+            text=f"DN {d_mm:.0f}mm | L = {long_m:.2f}m | S = {pend_pct:.2f}%",
+            showarrow=False,
+            font=dict(size=9, color="#8B0000"),
+            bgcolor="rgba(255, 255, 255, 0.8)",
+            bordercolor="#8B0000",
+            borderwidth=1
+        )
+
+    # Configuración de ejes e interfaz gráfica
+    fig_cad.update_layout(
+        title=dict(
+            text=f"<b>PERFIL LONGITUDINAL - {col_elegido} ({buzones_names[0]} a {buzones_names[-1]})</b>",
+            x=0.5, font=dict(size=16)
+        ),
+        xaxis=dict(
+            title="PROGRESIVA / DISTANCIA (m)",
+            showgrid=True, gridcolor='lightgray',
+            zeroline=False
+        ),
+        yaxis=dict(
+            title="ELEVACION / COTA (m.s.n.m.)",
+            showgrid=True, gridcolor='lightgray',
+            zeroline=False
+        ),
         template="plotly_white",
-        height=450
+        height=550,
+        showlegend=True
     )
-    st.plotly_chart(fig_prof, use_container_width=True)
+    
+    st.plotly_chart(fig_cad, use_container_width=True)
+    
+    # 5. GUITARRA / TABLA DE DATOS INFERIOR (Estilo Civil 3D)
+    st.markdown("#### 📐 GUITARRA DE DATOS DE CAMPO (GUITARRA CAD)")
+    
+    filas_guitarra = []
+    
+    # Progresiva
+    row_prog = {"CONCEPTO": "PROGRESIVA (m)"}
+    for i, x in enumerate(nodos_x):
+        row_prog[f"{buzones_names[i]}"] = f"0+{x:06.2f}"
+    filas_guitarra.append(row_prog)
+    
+    # Cota Terreno
+    row_ct = {"CONCEPTO": "COTA TERRENO (m)"}
+    for i, ct in enumerate(cota_terreno_nodes):
+        row_ct[f"{buzones_names[i]}"] = f"{ct:.2f}"
+    filas_guitarra.append(row_ct)
+    
+    # Cota Fondo
+    row_cf = {"CONCEPTO": "COTA FONDO (m)"}
+    for i, cf in enumerate(cota_fondo_nodes):
+        row_cf[f"{buzones_names[i]}"] = f"{cf:.2f}"
+    filas_guitarra.append(row_cf)
+    
+    # Altura de Buzón
+    row_h = {"CONCEPTO": "ALTURA BZ (m)"}
+    for i in range(len(nodos_x)):
+        row_h[f"{buzones_names[i]}"] = f"{(cota_terreno_nodes[i] - cota_fondo_nodes[i]):.2f}"
+    filas_guitarra.append(row_h)
+    
+    df_guitarra = pd.DataFrame(filas_guitarra)
+    st.dataframe(df_guitarra, use_container_width=True, hide_index=True)
