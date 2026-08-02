@@ -74,10 +74,14 @@ with col_titulo:
 with col_logo_der:
     st.image("logo_derecha.png", use_container_width=True)
 
+import os
+
 # -----------------------------------------------------------------------------
-# INICIALIZACION DE DATOS EN SESSION_STATE
+# INICIALIZACION DE DATOS EN SESSION_STATE CON GUARDADO LOCAL
 # -----------------------------------------------------------------------------
 OPCIONES_DIAMETROS = [0.1500, 0.1536, 0.2000, 0.2500, 0.3000, 0.3500, 0.4000, 0.4500, 0.5000]
+
+ARCHIVO_PROYECTO = "proyecto_alcantarillado.csv"
 
 def generar_300_tramos():
     tramos = []
@@ -114,8 +118,12 @@ def generar_300_tramos():
             
     return pd.DataFrame(tramos)
 
+# Cargar automáticamente los datos del archivo local si existe; de lo contrario, generar los 300 tramos base
 if "df_tramos_base" not in st.session_state:
-    st.session_state.df_tramos_base = generar_300_tramos()
+    if os.path.exists(ARCHIVO_PROYECTO):
+        st.session_state.df_tramos_base = pd.read_csv(ARCHIVO_PROYECTO)
+    else:
+        st.session_state.df_tramos_base = generar_300_tramos()
 
 PALETA_COLECTORES_CLAROS = [
     "#EBF5FB", "#E8F8F5", "#FEF9E7", "#F5EEF8",
