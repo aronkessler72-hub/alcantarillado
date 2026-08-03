@@ -539,7 +539,7 @@ with tab_seccion:
         st.markdown(f"##### PARAMETROS DEL {tramo_seleccionado}")
         df_tabla_excel = pd.DataFrame([
             {"PARAMETRO": "Longitud Tributaria Propia (m)", "VALOR": data_t['LONGITUD TRIBUTARIA PROPIA (m)']},
-            {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONGITUD TRIBUTARIA ACUMULADA (m)']},
+            {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONG TRIBUTARIA ACUMULADA (m)']},
             {"PARAMETRO": "Caudal Total (L/s)", "VALOR": data_t['CAUDAL TOTAL (L/s)']},
             {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['PENDIENTE (m/m)']},
             {"PARAMETRO": "Diametro Calculado (m)", "VALOR": data_t['DIÁMETRO CALCULADO (m)']},
