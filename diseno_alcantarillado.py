@@ -518,11 +518,13 @@ with tab_planilla:
     df_solver_view = df_res_completo[columnas_solver_ver]
     
     # CORRECCIÓN EN LA TABLA DEL SOLVER:
-    # Se usa .style.map(...) de manera robusta y compatible con Pandas moderno, asegurando 
+    # Se utiliza .style.map(...) de manera robusta y compatible con Pandas moderno, asegurando 
     # que las columnas estén presentes para evitar KeyError en subset.
     subset_cols = [c for c in ['VALIDACIÓN VELOCIDAD', 'VALIDACIÓN TENSIÓN TRACTIVA'] if c in df_solver_view.columns]
     
-    df_res_styled = df_solver_view.style         .map(estilar_colector, subset=['COLECTOR'] if 'COLECTOR' in df_solver_view.columns else None)         .map(estilar_cumplimiento, subset=subset_cols)
+    df_res_styled = df_solver_view.style \
+        .map(estilar_colector, subset=['COLECTOR'] if 'COLECTOR' in df_solver_view.columns else None) \
+        .map(estilar_cumplimiento, subset=subset_cols)
     
     st.dataframe(df_res_styled, use_container_width=True)
 
