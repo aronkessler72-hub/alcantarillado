@@ -10,7 +10,7 @@ import os
 # CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y CELESTE / CUADRICULA)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Alcantarillado Sanitario",
+    page_title="Sistema de Alcantarillado Sanitario [Retro Pixel Celeste]",
     layout="wide"
 )
 
@@ -122,7 +122,7 @@ with col_titulo:
     st.markdown("""
     <div class="retro-window">
         <div class="retro-titlebar">
-            <span>PRODUCTO_U3_ALCANTARILLADO.EXE</span>
+            <span>SYS_ALCANTARILLADO.PIXEL_EXE</span>
             <span class="pixel-buttons">_ □ X</span>
         </div>
         <div style="
@@ -137,7 +137,7 @@ with col_titulo:
                 SISTEMA DE ALCANTARILLADO SANITARIO
             </div>
             <div style="font-family: 'VT323', monospace; font-size: 22px; color: #B3E5FC; letter-spacing: 1px;">
-                MÓDULO DE CÁLCULO HIDRÁULICO
+                MÓDULO DE CÁLCULO HIDRÁULICO RETRO [ROSA Y CELESTE]
             </div>
             <hr style="border: 0; border-top: 2px dashed #B3E5FC; margin: 8px 0;">
             <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
@@ -261,18 +261,19 @@ with tab_param:
     
     with col_p1:
         st.markdown("##### Datos Básicos")
-        periodo = st.number_input("Periodo de diseño (años)", value=15)
-        pob_actual = st.number_input("Población actual (hab)", value=4804)
-        pob_futura = st.number_input("Población futura (hab)", value=7286)
-        qmh = st.number_input("Caudal máximo horario Qmh (L/s)", value=42.16, format="%.4f")
+        periodo = st.number_input("Periodo de diseño (años)", value=20)
+        pob_actual = st.number_input("Población actual (hab)", value=6702)
+        pob_futura = st.number_input("Población futura (hab)", value=7000)
+        qmh = st.number_input("Caudal máximo horario Qmh (L/s)", value=27.00, format="%.4f")
         coef_retorno = st.number_input("Coeficiente de retorno (%)", value=80.0, format="%.2f") / 100.0
-        long_total = st.number_input("Longitud total de la red (m)", value=19800.00, format="%.2f")
+        long_total = st.number_input("Longitud total de la red (m)", value=8689.00, format="%.2f")
         
         st.markdown("---")
         st.markdown("##### 1. Selección de Conexiones Erradas ($Q_{CE}$)")
         cultura_sanitaria = st.selectbox(
             "Cultura Sanitaria de la Población:",
-            ["Alta Cultura Sanitaria (5%)", "Media Cultura Sanitaria (7.5%)", "Baja / Nula Cultura Sanitaria (10%)", "Personalizado"]
+            ["Baja / Nula Cultura Sanitaria (10%)", "Alta Cultura Sanitaria (5%)", "Media Cultura Sanitaria (7.5%)", "Personalizado"],
+            index=0
         )
         
         if "Alta" in cultura_sanitaria:
@@ -282,29 +283,29 @@ with tab_param:
         elif "Baja" in cultura_sanitaria:
             pct_erradas = 10.0
         else:
-            pct_erradas = st.number_input("Porcentaje de Conexiones Erradas (%)", value=8.0, min_value=0.0, max_value=20.0, format="%.2f")
+            pct_erradas = st.number_input("Porcentaje de Conexiones Erradas (%)", value=10.0, min_value=0.0, max_value=20.0, format="%.2f")
             
         coef_erradas = pct_erradas / 100.0
 
     with col_p2:
         st.markdown("##### 2. Selección de Infiltración Lineal ($q_{inf}$)")
         
-        nivel_freatico = st.selectbox("Nivel Freático en el área:", ["Ausente / Bajo (Por debajo del colector)", "Alto (Colector bajo agua subterránea)"])
-        material_tub = st.selectbox("Material de Tubería y Junta:", ["PVC / Plástico con anillo de goma (Estanco)", "Hormigón / Concreto rígido", "Personalizado"])
-        calidad_const = st.selectbox("Calidad de Construcción / Estanqueidad de BZ:", ["Buena / Estanca", "Regular", "Deficiente"])
+        nivel_freatico = st.selectbox("Nivel Freático en el área:", ["Ausente / Bajo (Por debajo del colector)", "Alto (Colector bajo agua subterránea)"], index=0)
+        material_tub = st.selectbox("Material de Tubería y Junta:", ["PVC / Plástico con anillo de goma (Estanco)", "Hormigón / Concreto rígido", "Personalizado"], index=0)
+        calidad_const = st.selectbox("Calidad de Construcción / Estanqueidad de BZ:", ["Buena / Estanca", "Regular", "Deficiente"], index=0)
         
         if "PVC" in material_tub:
-            q_base = 0.00005 if "Ausente" in nivel_freatico else 0.00010
+            q_base = 0.00000 if "Ausente" in nivel_freatico else 0.00000
         elif "Hormigón" in material_tub:
             q_base = 0.00015 if "Ausente" in nivel_freatico else 0.00030
         else:
-            q_base = 0.00010
+            q_base = 0.00000
             
-        if "Deficiente" in calidad_const:
+        if "Deficiente" in calidad_const and material_tub != "PVC":
             q_base *= 1.25
             
         if material_tub == "Personalizado":
-            coef_infilt = st.number_input("Coeficiente de Infiltración Lineal (L/s/m)", value=0.0001, format="%.5f")
+            coef_infilt = st.number_input("Coeficiente de Infiltración Lineal (L/s/m)", value=0.0000, format="%.5f")
         else:
             coef_infilt = st.number_input("Coeficiente de Infiltración Lineal Asignado (L/s/m)", value=q_base, format="%.5f")
 
