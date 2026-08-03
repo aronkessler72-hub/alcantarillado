@@ -10,7 +10,7 @@ import os
 # CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y CELESTE / CUADRICULA)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Alcantarillado Sanitario",
+    page_title="Sistema de Alcantarillado Sanitario [Retro Pixel Celeste]",
     layout="wide"
 )
 
@@ -137,7 +137,7 @@ with col_titulo:
                 SISTEMA DE ALCANTARILLADO SANITARIO
             </div>
             <div style="font-family: 'VT323', monospace; font-size: 22px; color: #B3E5FC; letter-spacing: 1px;">
-                MÓDULO DE CÁLCULO HIDRÁULICO 
+                MÓDULO DE CÁLCULO HIDRÁULICO RETRO [ROSA Y CELESTE]
             </div>
             <hr style="border: 0; border-top: 2px dashed #B3E5FC; margin: 8px 0;">
             <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
@@ -539,7 +539,7 @@ with tab_seccion:
         st.markdown(f"##### PARAMETROS DEL {tramo_seleccionado}")
         df_tabla_excel = pd.DataFrame([
             {"PARAMETRO": "Longitud Tributaria Propia (m)", "VALOR": data_t['LONGITUD TRIBUTARIA PROPIA (m)']},
-            {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONG TRIBUTARIA ACUMULADA (m)']},
+            {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONGITUD TRIBUTARIA ACUMULADA (m)']},
             {"PARAMETRO": "Caudal Total (L/s)", "VALOR": data_t['CAUDAL TOTAL (L/s)']},
             {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['PENDIENTE (m/m)']},
             {"PARAMETRO": "Diametro Calculado (m)", "VALOR": data_t['DIÁMETRO CALCULADO (m)']},
@@ -610,10 +610,10 @@ with tab_seccion:
         st.plotly_chart(fig_pipe, use_container_width=True)
 
 # =============================================================================
-# PESTANA 4: PERFIL LONGITUDINAL ESTILO CAD RETRO
+# PESTANA 4: PERFIL LONGITUDINAL ESTILO CAD RETRO (CON EFECTO 3D EN BUZONES)
 # =============================================================================
 with tab_perfil:
-    st.subheader("PERFIL LONGITUDINAL [CAD PIXEL]")
+    st.subheader("PERFIL LONGITUDINAL [CAD PIXEL 3D]")
     
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
     col_elegido = st.selectbox("SELECCIONAR COLECTOR PARA EL PERFIL:", lista_cols)
@@ -636,6 +636,7 @@ with tab_perfil:
 
     fig_cad = go.Figure()
     
+    # 1. Terreno natural
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_terreno_nodes,
         mode='lines',
@@ -643,6 +644,7 @@ with tab_perfil:
         name='Terreno Natural'
     ))
     
+    # 2. Tubería (fondo)
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_fondo_nodes,
         mode='lines',
@@ -650,6 +652,7 @@ with tab_perfil:
         name='Tubería (Fondo)'
     ))
     
+    # 3. Buzones con efecto 3D (bloque y rayita blanca brillante para dar relieve)
     ancho_bz = (max(nodos_x) if max(nodos_x) > 0 else 100) * 0.008
     for i in range(len(nodos_x)):
         x_c = nodos_x[i]
@@ -657,14 +660,24 @@ with tab_perfil:
         y_top = cota_terreno_nodes[i]
         h_bz = y_top - y_bottom
         
+        # Cuerpo principal del buzón (rectángulo semitransparente celeste)
         fig_cad.add_shape(
             type="rect",
             x0=x_c - ancho_bz, x1=x_c + ancho_bz,
             y0=y_bottom, y1=y_top,
-            fillcolor="rgba(179, 229, 252, 0.5)",
+            fillcolor="rgba(179, 229, 252, 0.65)",
             line=dict(color="#1A237E", width=2)
         )
         
+        # Rayita / Borde lateral izquierdo en color blanco para simular brillo 3D/volumen
+        fig_cad.add_shape(
+            type="line",
+            x0=x_c - ancho_bz, x1=x_c - ancho_bz,
+            y0=y_bottom, y1=y_top,
+            line=dict(color="#FFFFFF", width=3)
+        )
+        
+        # Etiqueta de texto del buzón
         fig_cad.add_annotation(
             x=x_c, y=y_top + 0.35,
             text=f"<b>{buzones_names[i]}</b><br>CT: {y_top:.2f}<br>CF: {y_bottom:.2f}<br>H: {h_bz:.2f}m",
@@ -676,6 +689,7 @@ with tab_perfil:
             align="center"
         )
         
+    # Anotaciones de tramos (diámetro, longitud, pendiente)
     for idx, r in df_res_p.iterrows():
         x_mid = (nodos_x[idx] + nodos_x[idx+1]) / 2.0
         y_mid = (cota_fondo_nodes[idx] + cota_fondo_nodes[idx+1]) / 2.0 - 0.30
@@ -695,7 +709,7 @@ with tab_perfil:
 
     fig_cad.update_layout(
         title=dict(
-            text=f"<b>PERFIL LONGITUDINAL - {col_elegido} ({buzones_names[0]} a {buzones_names[-1]})</b>",
+            text=f"<b>PERFIL LONGITUDINAL [3D] - {col_elegido} ({buzones_names[0]} a {buzones_names[-1]})</b>",
             x=0.5, font=dict(size=14, family="Press Start 2P")
         ),
         xaxis=dict(
