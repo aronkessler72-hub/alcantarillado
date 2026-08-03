@@ -4,9 +4,10 @@ import pandas as pd
 from scipy.optimize import fsolve
 import plotly.graph_objects as go
 import io
+import os
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION DE PAGINA Y ESTILOS
+# CONFIGURACION DE PAGINA Y ESTILOS (VINTAGE MICROSOFT / WIN95 STYLE)
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema de Alcantarillado Sanitario",
@@ -15,72 +16,131 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Consolas&family=Roboto+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Consolas&family=Courier+New&display=swap');
     
-    /* 1. Forzar tipografía en todo el cuerpo del DOM de Streamlit */
+    /* 1. Forzar tipografía estilo consola retro en toda la aplicación */
     html, body, [class*="st-"], [class*="css"], div, span, p, label, input, button, table, td, th {
-        font-family: 'Consolas', 'Roboto Mono', 'Courier New', monospace !important;
+        font-family: 'Consolas', 'Courier New', monospace !important;
     }
     
-    /* 2. Forzar tipografía específica dentro de las tablas de datos (st.dataframe) */
+    /* 2. Fondo general con un tono gris clásico estilo ventana de Windows antiguo */
+    .stApp {
+        background-color: #C0C0C0;
+    }
+
+    /* Contenedor principal estilo ventana de diálogo retro */
+    .retro-window {
+        background-color: #ECECEC;
+        border-top: 2px solid #FFFFFF;
+        border-left: 2px solid #FFFFFF;
+        border-right: 2px solid #404040;
+        border-bottom: 2px solid #404040;
+        box-shadow: inset 1px 1px #FFFFFFFF, inset -1px -1px #000000FF;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+
+    /* Estilo clásico de barra de título de ventana antigua */
+    .retro-titlebar {
+        background: linear-gradient(90deg, #000080, #1084d0);
+        color: white;
+        padding: 4px 8px;
+        font-weight: bold;
+        font-size: 13px;
+        letter-spacing: 1px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    /* 3. Forzar tipografía específica dentro de las tablas de datos (st.dataframe) */
     [data-testid="stDataFrame"] *, 
     [data-testid="stTable"] *,
     div[role="gridcell"], 
     div[role="columnheader"] {
-        font-family: 'Consolas', 'Roboto Mono', 'Courier New', monospace !important;
+        font-family: 'Consolas', 'Courier New', monospace !important;
     }
 
-    /* 3. Ajuste de peso negrita opcional para los valores */
+    /* 4. Ajuste de celdas */
     div[role="gridcell"] {
         font-weight: 700 !important;
+    }
+
+    /* Botones con relieve 3D clásico estilo Windows 95 */
+    .stButton>button, .stDownloadButton>button {
+        background-color: #C0C0C0 !important;
+        border-top: 2px solid #FFFFFF !important;
+        border-left: 2px solid #FFFFFF !important;
+        border-right: 2px solid #404040 !important;
+        border-bottom: 2px solid #404040 !important;
+        color: #000000 !important;
+        font-family: 'Consolas', monospace !important;
+        font-weight: bold !important;
+        border-radius: 0px !important;
+    }
+    
+    .stButton>button:active, .stDownloadButton>button:active {
+        border-top: 2px solid #404040 !important;
+        border-left: 2px solid #404040 !important;
+        border-right: 2px solid #FFFFFF !important;
+        border-bottom: 2px solid #FFFFFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# ENCABEZADO CON LOGOS Y DATOS PEQUEÑOS
+# ENCABEZADO CON LOGOS Y DATOS PEQUEÑOS (ESTILO VENTANA RETRO)
 # -----------------------------------------------------------------------------
 col_logo_izq, col_titulo, col_logo_der = st.columns([1.5, 7, 1.5])
 
 with col_logo_izq:
-    st.image("logo_izquierda.png", use_container_width=True) 
+    if os.path.exists("logo_izquierda.png"):
+        st.image("logo_izquierda.png", use_container_width=True)
+    else:
+        st.markdown("<div style='border: 1px dashed gray; text-align:center; padding:20px; font-size:10px;'>[LOGO IZQ]</div>", unsafe_allow_html=True)
 
 with col_titulo:
     st.markdown("""
-    <div style="
-        background-color: #8B0000;
-        color: white;
-        padding: 12px 15px;
-        border: 2px solid #5A0000;
-        text-align: center;
-        border-radius: 4px;
-        margin-bottom: 20px;
-    ">
-        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">
-            SISTEMA DE ALCANTARILLADO SANITARIO
+    <div class="retro-window">
+        <div class="retro-titlebar">
+            <span>SYS_ALCANTARILLADO.EXE - MÓDULO PRINCIPAL</span>
+            <span>[_][□][X]</span>
         </div>
-        <div style="font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #E0E0E0; text-transform: uppercase;">
-            CÁLCULO HIDRÁULICO
-        </div>
-        <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.3); margin: 8px 0;">
-        <div style="font-size: 9.5px; font-weight: 400; line-height: 1.3; color: #F0F0F0; opacity: 0.9;">
-            POR: Condori Bustincio, Norka Guadalupe 240852 &nbsp;|&nbsp; 
-            CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp; 
-            DOCENTE: Fernández Sila, Guillermo Nestor
+        <div style="
+            background-color: #8B0000;
+            color: white;
+            padding: 10px 12px;
+            border: 2px inset #5A0000;
+            text-align: center;
+            margin-bottom: 5px;
+        ">
+            <div style="font-size: 18px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">
+                SISTEMA DE ALCANTARILLADO SANITARIO
+            </div>
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #E0E0E0; text-transform: uppercase;">
+                CÁLCULO HIDRÁULICO (MODO COMPATIBILIDAD VINTAGE)
+            </div>
+            <hr style="border: 0; border-top: 1px dashed rgba(255, 255, 255, 0.5); margin: 6px 0;">
+            <div style="font-size: 9px; font-weight: 400; line-height: 1.3; color: #F0F0F0;">
+                POR: Condori Bustincio, Norka Guadalupe 240852 &nbsp;|&nbsp; 
+                CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp; 
+                DOCENTE: Fernández Sila, Guillermo Nestor
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 with col_logo_der:
-    st.image("logo_derecha.png", use_container_width=True)
-
-import os
+    if os.path.exists("logo_derecha.png"):
+        st.image("logo_derecha.png", use_container_width=True)
+    else:
+        st.markdown("<div style='border: 1px dashed gray; text-align:center; padding:20px; font-size:10px;'>[LOGO DER]</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # INICIALIZACION DE DATOS EN SESSION_STATE CON GUARDADO LOCAL
 # -----------------------------------------------------------------------------
 OPCIONES_DIAMETROS = [0.1500, 0.1536, 0.2000, 0.2500, 0.3000, 0.3500, 0.4000, 0.4500, 0.5000]
-
 ARCHIVO_PROYECTO = "proyecto_alcantarillado.csv"
 
 def generar_300_tramos():
@@ -118,12 +178,31 @@ def generar_300_tramos():
             
     return pd.DataFrame(tramos)
 
-# Cargar automáticamente los datos del archivo local si existe; de lo contrario, generar los 300 tramos base
+# Panel en la barra lateral para importar y exportar tus avances con estética retro
+st.sidebar.markdown("""
+<div style="background-color: #000080; color: white; padding: 4px; font-weight: bold; font-size: 11px; margin-bottom: 10px;">
+    📁 PANEL DE ARCHIVOS [IO]
+</div>
+""", unsafe_allow_html=True)
+
+archivo_subido = st.sidebar.file_uploader("Cargar avance previo (Excel o CSV)", type=["csv", "xlsx"])
+
 if "df_tramos_base" not in st.session_state:
-    if os.path.exists(ARCHIVO_PROYECTO):
+    if archivo_subido is not None:
+        if archivo_subido.name.endswith('.csv'):
+            st.session_state.df_tramos_base = pd.read_csv(archivo_subido)
+        else:
+            st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
+    elif os.path.exists(ARCHIVO_PROYECTO):
         st.session_state.df_tramos_base = pd.read_csv(ARCHIVO_PROYECTO)
     else:
         st.session_state.df_tramos_base = generar_300_tramos()
+else:
+    if archivo_subido is not None:
+        if archivo_subido.name.endswith('.csv'):
+            st.session_state.df_tramos_base = pd.read_csv(archivo_subido)
+        else:
+            st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
 
 PALETA_COLECTORES_CLAROS = [
     "#EBF5FB", "#E8F8F5", "#FEF9E7", "#F5EEF8",
@@ -143,71 +222,6 @@ def estilar_cumplimiento(val):
         return "background-color: #D4EDDA; color: #155724; font-weight: bold;"
     else:
         return "background-color: #F8D7DA; color: #721C24; font-weight: bold;"
-
-
-# -----------------------------------------------------------------------------
-# CARGADOR Y PERSISTENCIA DE DATOS (EXCEL / CSV)
-# --------------------------------5---------------------------------------------
-OPCIONES_DIAMETROS = [0.1500, 0.1536, 0.2000, 0.2500, 0.3000, 0.3500, 0.4000, 0.4500, 0.5000]
-ARCHIVO_PROYECTO = "proyecto_alcantarillado.csv"
-
-def generar_300_tramos():
-    tramos = []
-    tramo_global_count = 1
-    
-    for num_colector in range(1, 51):
-        colector_tag = f"COLECTOR {num_colector}"
-        camara_inicio = (num_colector - 1) * 6 + 1
-        
-        for t_index in range(1, 7):
-            c_de = int(camara_inicio + (t_index - 1))
-            c_a = int(c_de + 1)
-            
-            cota_t_de = round(3830.00 - (t_index * 0.45) - (num_colector * 0.10), 4)
-            cota_t_a = round(3830.00 - ((t_index + 1) * 0.45) - (num_colector * 0.10), 4)
-            cota_f_de = round(cota_t_de - 1.20, 4)
-            cota_f_a = round(cota_t_a - 1.20, 4)
-            
-            tramos.append({
-                "COLECTOR": colector_tag,
-                "TRAMO_ID": f"T-{tramo_global_count:03d} (C-{c_de} a C-{c_a})",
-                "DE": c_de,
-                "A": c_a,
-                "Long_m": 66.0,
-                "Cota_Terreno_DE": cota_t_de,
-                "Cota_Terreno_A": cota_t_a,
-                "Cota_Fondo_DE": cota_f_de,
-                "Cota_Fondo_A": cota_f_a,
-                "D_comercial_m": 0.1536,
-                "Manning_n": 0.013,
-                "Q_min_RNE": 1.50
-            })
-            tramo_global_count += 1
-            
-    return pd.DataFrame(tramos)
-
-# Panel en la barra lateral para importar y exportar tus avances
-st.sidebar.markdown("### 📂 Gestión de Archivos")
-archivo_subido = st.sidebar.file_uploader("Cargar avance previo (Excel o CSV)", type=["csv", "xlsx"])
-
-if "df_tramos_base" not in st.session_state:
-    if archivo_subido is not None:
-        if archivo_subido.name.endswith('.csv'):
-            st.session_state.df_tramos_base = pd.read_csv(archivo_subido)
-        else:
-            st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
-    elif os.path.exists(ARCHIVO_PROYECTO):
-        st.session_state.df_tramos_base = pd.read_csv(ARCHIVO_PROYECTO)
-    else:
-        st.session_state.df_tramos_base = generar_300_tramos()
-else:
-    # Si el usuario sube un archivo nuevo después de iniciar la app
-    if archivo_subido is not None:
-        if archivo_subido.name.endswith('.csv'):
-            st.session_state.df_tramos_base = pd.read_csv(archivo_subido)
-        else:
-            st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
-
 
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
@@ -261,7 +275,6 @@ with tab_param:
         material_tub = st.selectbox("Material de Tubería y Junta:", ["PVC / Plástico con anillo de goma (Estanco)", "Hormigón / Concreto rígido", "Personalizado"])
         calidad_const = st.selectbox("Calidad de Construcción / Estanqueidad de BZ:", ["Buena / Estanca", "Regular", "Deficiente"])
         
-        # Lógica de sugerencia de q_inf
         if "PVC" in material_tub:
             q_base = 0.00005 if "Ausente" in nivel_freatico else 0.00010
         elif "Hormigón" in material_tub:
@@ -301,41 +314,31 @@ with tab_param:
 def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_acum, q_inicio_anterior):
     l_propia = float(row['Long_m'])
     
-    # 1. Aguas residuales
     q_res_propio = q_unit * l_propia
     q_res_acum = q_unit * long_acum
     
-    # 2. Conexiones erradas
     q_err_propio = q_res_propio * c_erradas
     q_err_acum = q_res_acum * c_erradas
     
-    # 3. Infiltración
     q_inf_propio = c_infilt * l_propia
     q_inf_acum = c_infilt * long_acum
     
-    # 4. Caudal total acumulado
     q_tot_calculado = q_res_acum + q_err_acum + q_inf_acum
     q_diseno_ls = max(q_tot_calculado, float(row['Q_min_RNE']))
     
-    # Qi (inicial) y Qf (final)
     q_i_ls = q_inicio_anterior
     q_f_ls = q_diseno_ls
     
     q_diseno_m3s = q_diseno_ls / 1000.0
     
-    # Pendiente
     c_f_de = float(row['Cota_Fondo_DE'])
     c_f_a = float(row['Cota_Fondo_A'])
     S = (c_f_de - c_f_a) / l_propia if l_propia > 0 else 0.001
     n = float(row['Manning_n'])
     
-    # Diámetro calculado teórico D_calc = ((0.312 * S^0.5) / (Q * n))^-0.375
     D_calc = float(( (q_diseno_m3s * n) / (0.312 * np.sqrt(S)) ) ** (3/8)) if S > 0 else 0.1000
-    
-    # Diámetro comercial interior seleccionado
     D_com = float(row['D_comercial_m'])
     
-    # Capacidad a sección llena y al 75%
     A_llena = (np.pi * (D_com ** 2)) / 4.0
     RH_lleno = D_com / 4.0
     Q_lleno = (1.0 / n) * A_llena * (RH_lleno ** (2/3)) * np.sqrt(S)
@@ -343,7 +346,6 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     Q_75 = 0.75 * Q_lleno
     V_75 = (1.0 / n) * (RH_lleno ** (2/3)) * np.sqrt(S)
     
-    # Solver de Manning para sección parcial (Ángulo theta)
     K = (n * q_diseno_m3s) / (np.sqrt(S) * (D_com ** (8/3))) if (S > 0 and D_com > 0) else 0.01
     
     def func_solver(theta):
@@ -363,10 +365,8 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     tirante = (D_com / 2.0) * (1.0 - np.cos(theta_sol / 2.0))
     relacion_y_D = tirante / D_com if D_com > 0 else 0.0
     
-    # Tensión tractiva tau = 9810 * R * S
     tau = 9810.0 * r_hid * S
     
-    # Validaciones exactas
     cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else "NO CUMPLE"
     cumple_tau = "CUMPLE" if tau >= 1.00 else "NO CUMPLE"
     
@@ -401,7 +401,6 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
         "TENSIÓN TRACTIVA (Pa)": f"{tau:.4f}",
         "VALIDACIÓN VELOCIDAD": cumple_v,
         "VALIDACIÓN TENSIÓN TRACTIVA": cumple_tau,
-        # Variables numéricas internas para gráfica
         "D_m": D_com,
         "S_m/m": S,
         "Theta_rad": theta_sol,
@@ -439,9 +438,6 @@ with tab_planilla:
     
     st.session_state.df_tramos_base = df_edited
 
-    # =========================================================================
-    # BOTÓN DE GUARDADO LOCAL
-    # =========================================================================
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("💾 Guardar Cambios en PC", use_container_width=True):
@@ -449,7 +445,6 @@ with tab_planilla:
             st.success("¡Guardado con éxito!")
             
     with col2:
-        # Botón para descargar en Excel directamente
         buffer = io.BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_edited.to_excel(writer, index=False, sheet_name='Tramos')
@@ -579,12 +574,12 @@ with tab_seccion:
         fig_pipe.update_layout(
             title=dict(
                 text=f"<b>Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.4f} m)</b>",
-                font=dict(size=20)  # <-- Aumenta el tamaño de la letra del título
+                font=dict(size=18, family="Consolas")
             ),
             xaxis=dict(range=[-R*1.2, R*1.2], constrain='domain', visible=False),
             yaxis=dict(range=[-R*0.2, D_val*1.2], scaleanchor="x", scaleratio=1, visible=False),
-            height=600,            # <-- Aumenta la altura del gráfico (de 400 a 600)
-            margin=dict(l=20, r=20, t=50, b=20), # <-- Quita bordes blancos innecesarios
+            height=600,
+            margin=dict(l=20, r=20, t=50, b=20),
             template="plotly_white",
             showlegend=True
         )
@@ -592,7 +587,7 @@ with tab_seccion:
         st.plotly_chart(fig_pipe, use_container_width=True)
 
 # =============================================================================
-# PESTANA 4: PERFIL LONGITUDINAL ESTILO AUTOCAD / CIVIL 3D
+# PESTANA 4: PERFIL LONGITUDINAL ESTILO CAD
 # =============================================================================
 with tab_perfil:
     st.subheader("PERFIL LONGITUDINAL")
@@ -651,7 +646,7 @@ with tab_perfil:
             x=x_c, y=y_top + 0.35,
             text=f"<b>{buzones_names[i]}</b><br>CT: {y_top:.2f}<br>CF: {y_bottom:.2f}<br>H: {h_bz:.2f}m",
             showarrow=False,
-            font=dict(size=9, color="black"),
+            font=dict(size=9, color="black", family="Consolas"),
             bgcolor="#FFFFCC",
             bordercolor="gray",
             borderwidth=1,
@@ -669,7 +664,7 @@ with tab_perfil:
             x=x_mid, y=y_mid,
             text=f"DN {d_mm:.0f}mm | L = {long_m:.2f}m | S = {pend_pct:.2f}%",
             showarrow=False,
-            font=dict(size=9, color="#8B0000"),
+            font=dict(size=9, color="#8B0000", family="Consolas"),
             bgcolor="rgba(255, 255, 255, 0.8)",
             bordercolor="#8B0000",
             borderwidth=1
@@ -678,7 +673,7 @@ with tab_perfil:
     fig_cad.update_layout(
         title=dict(
             text=f"<b>PERFIL LONGITUDINAL - {col_elegido} ({buzones_names[0]} a {buzones_names[-1]})</b>",
-            x=0.5, font=dict(size=16)
+            x=0.5, font=dict(size=16, family="Consolas")
         ),
         xaxis=dict(
             title="PROGRESIVA / DISTANCIA (m)",
