@@ -7,10 +7,10 @@ import io
 import os
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y MENTA / CUADRICULA)
+# CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y CELESTE / CUADRICULA)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Alcantarillado Sanitario [Retro Pixel]",
+    page_title="Sistema de Alcantarillado Sanitario [Retro Pixel Celeste]",
     layout="wide"
 )
 
@@ -27,31 +27,31 @@ st.markdown("""
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Press Start 2P', monospace !important;
         font-size: 14px !important;
-        color: #8B0000;
+        color: #1A237E;
     }
     
-    /* 2. Fondo de cuadrícula (gráfico) de estilo papel de cuaderno en tonos menta y rosa */
+    /* 2. Fondo de cuadrícula (gráfico) de estilo papel de cuaderno en tonos celeste y rosa */
     .stApp {
-        background-color: #E8F5E9;
+        background-color: #E3F2FD;
         background-image: 
-            linear-gradient(to right, #D0E1D4 1px, transparent 1px),
-            linear-gradient(to bottom, #D0E1D4 1px, transparent 1px);
+            linear-gradient(to right, #BBDEFB 1px, transparent 1px),
+            linear-gradient(to bottom, #BBDEFB 1px, transparent 1px);
         background-size: 20px 20px;
     }
 
-    /* 3. Ventanas de aplicación de estilo retro en rosa y menta */
+    /* 3. Ventanas de aplicación de estilo retro en rosa y celeste */
     .retro-window {
         background-color: #FFF0F5; /* Rosa muy suave / pastel */
-        border: 3px solid #8B0000;
-        box-shadow: 4px 4px 0px #2E7D32; /* Sombra verde menta oscuro / píxel */
+        border: 3px solid #1A237E;
+        box-shadow: 4px 4px 0px #0288D1; /* Sombra celeste oscuro / píxel */
         padding: 12px;
         margin-bottom: 20px;
     }
 
     /* Barra de título estilo ventana antigua con botones pixelados [_][□][X] */
     .retro-titlebar {
-        background: linear-gradient(90deg, #8B0000, #C2185B);
-        color: #A5D6A7; /* Menta */
+        background: linear-gradient(90deg, #1A237E, #C2185B);
+        color: #B3E5FC; /* Celeste claro */
         padding: 6px 10px;
         font-family: 'Press Start 2P', monospace !important;
         font-size: 10px !important;
@@ -59,13 +59,13 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         margin-bottom: 12px;
-        border-bottom: 2px solid #2E7D32;
+        border-bottom: 2px solid #0288D1;
     }
     
     .pixel-buttons {
         font-family: 'Press Start 2P', monospace !important;
-        background-color: #A5D6A7;
-        color: #8B0000;
+        background-color: #B3E5FC;
+        color: #1A237E;
         padding: 2px 5px;
         border: 1px solid #000;
         font-size: 9px;
@@ -81,12 +81,12 @@ st.markdown("""
         font-size: 20px !important;
     }
 
-    /* 5. Botones con estilo retro pixelado (Rosa / Menta) */
+    /* 5. Botones con estilo retro pixelado (Rosa / Celeste) */
     .stButton>button, .stDownloadButton>button {
         background-color: #F8BBD0 !important;
-        border: 2px solid #8B0000 !important;
-        box-shadow: 3px 3px 0px #2E7D32 !important;
-        color: #8B0000 !important;
+        border: 2px solid #1A237E !important;
+        box-shadow: 3px 3px 0px #0288D1 !important;
+        color: #1A237E !important;
         font-family: 'Press Start 2P', monospace !important;
         font-size: 9px !important;
         border-radius: 0px !important;
@@ -95,20 +95,20 @@ st.markdown("""
     
     .stButton>button:active, .stDownloadButton>button:active {
         transform: translate(2px, 2px);
-        box-shadow: 1px 1px 0px #2E7D32 !important;
+        box-shadow: 1px 1px 0px #0288D1 !important;
     }
     
     /* Cajas de texto y selectores estilo retro */
     input, select, textarea {
         background-color: #FFFFFF !important;
-        border: 2px solid #2E7D32 !important;
-        color: #8B0000 !important;
+        border: 2px solid #0288D1 !important;
+        color: #1A237E !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# ENCABEZADO CON VENTANA RETRO PIXEL ART (ROSA Y MENTA)
+# ENCABEZADO CON VENTANA RETRO PIXEL ART (ROSA Y CELESTE)
 # -----------------------------------------------------------------------------
 col_logo_izq, col_titulo, col_logo_der = st.columns([1.5, 7, 1.5])
 
@@ -116,7 +116,7 @@ with col_logo_izq:
     if os.path.exists("logo_izquierda.png"):
         st.image("logo_izquierda.png", use_container_width=True)
     else:
-        st.markdown("<div style='border: 2px dashed #8B0000; background: #A5D6A7; text-align:center; padding:15px; font-size:12px; color:#8B0000;'>[LOGO IZQ]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='border: 2px dashed #1A237E; background: #B3E5FC; text-align:center; padding:15px; font-size:12px; color:#1A237E;'>[LOGO IZQ]</div>", unsafe_allow_html=True)
 
 with col_titulo:
     st.markdown("""
@@ -126,20 +126,20 @@ with col_titulo:
             <span class="pixel-buttons">_ □ X</span>
         </div>
         <div style="
-            background-color: #8B0000;
-            color: #A5D6A7;
+            background-color: #1A237E;
+            color: #B3E5FC;
             padding: 12px;
-            border: 2px solid #2E7D32;
+            border: 2px solid #0288D1;
             text-align: center;
             margin-bottom: 5px;
         ">
             <div style="font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.6; color: #FFFFFF; margin-bottom: 6px;">
                 SISTEMA DE ALCANTARILLADO SANITARIO
             </div>
-            <div style="font-family: 'VT323', monospace; font-size: 22px; color: #A5D6A7; letter-spacing: 1px;">
-                MÓDULO DE CÁLCULO HIDRÁULICO RETRO [ROSA Y MENTA]
+            <div style="font-family: 'VT323', monospace; font-size: 22px; color: #B3E5FC; letter-spacing: 1px;">
+                MÓDULO DE CÁLCULO HIDRÁULICO RETRO [ROSA Y CELESTE]
             </div>
-            <hr style="border: 0; border-top: 2px dashed #A5D6A7; margin: 8px 0;">
+            <hr style="border: 0; border-top: 2px dashed #B3E5FC; margin: 8px 0;">
             <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
                 AUTORA: Condori Bustincio, Norka Guadalupe (240852) &nbsp;|&nbsp; 
                 CURSO: Abastecimiento y Alcantarillado &nbsp;|&nbsp; 
@@ -153,7 +153,7 @@ with col_logo_der:
     if os.path.exists("logo_derecha.png"):
         st.image("logo_derecha.png", use_container_width=True)
     else:
-        st.markdown("<div style='border: 2px dashed #8B0000; background: #A5D6A7; text-align:center; padding:15px; font-size:12px; color:#8B0000;'>[LOGO DER]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='border: 2px dashed #1A237E; background: #B3E5FC; text-align:center; padding:15px; font-size:12px; color:#1A237E;'>[LOGO DER]</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # INICIALIZACION DE DATOS EN SESSION_STATE CON GUARDADO LOCAL
@@ -198,7 +198,7 @@ def generar_300_tramos():
 
 # Barra lateral con aspecto de ventana de programa de dibujo / error retro
 st.sidebar.markdown("""
-<div style="background-color: #2E7D32; color: #FFF; padding: 6px; font-family: 'Press Start 2P'; font-size: 9px; margin-bottom: 10px; border: 2px solid #8B0000;">
+<div style="background-color: #0288D1; color: #FFF; padding: 6px; font-family: 'Press Start 2P'; font-size: 9px; margin-bottom: 10px; border: 2px solid #1A237E;">
     [!] ARCHIVOS_SYS.DAT
 </div>
 """, unsafe_allow_html=True)
@@ -223,21 +223,21 @@ else:
             st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
 
 PALETA_COLECTORES_PASTEL = [
-    "#FCE4EC", "#E8F5E9", "#FFFDE7", "#F3E5F5",
-    "#FBE9E7", "#E0F2F1", "#E3F2FD", "#FFF3E0"
+    "#FCE4EC", "#E3F2FD", "#FFFDE7", "#F3E5F5",
+    "#FBE9E7", "#E0F7FA", "#E8EAF6", "#FFF3E0"
 ]
 
 def estilar_colector(val):
     try:
         num = int(str(val).replace("COLECTOR", "").strip())
         color = PALETA_COLECTORES_PASTEL[(num - 1) % len(PALETA_COLECTORES_PASTEL)]
-        return f"background-color: {color}; color: #8B0000; font-weight: bold;"
+        return f"background-color: {color}; color: #1A237E; font-weight: bold;"
     except:
         return ""
 
 def estilar_cumplimiento(val):
     if str(val).startswith("CUMPLE"):
-        return "background-color: #A5D6A7; color: #1B5E20; font-weight: bold;"
+        return "background-color: #B3E5FC; color: #0D47A1; font-weight: bold;"
     else:
         return "background-color: #FFCDD2; color: #B71C1C; font-weight: bold;"
 
@@ -572,7 +572,7 @@ with tab_seccion:
         fig_pipe.add_trace(go.Scatter(
             x=x_pipe, y=y_pipe,
             mode='lines',
-            line=dict(color='#8B0000', width=6),
+            line=dict(color='#1A237E', width=6),
             name='Tubería'
         ))
         
@@ -588,8 +588,8 @@ with tab_seccion:
             fig_pipe.add_trace(go.Scatter(
                 x=x_water, y=y_water,
                 fill='toself',
-                fillcolor='rgba(165, 214, 167, 0.85)', # Menta pastel
-                line=dict(color='#2E7D32', width=3),
+                fillcolor='rgba(179, 229, 252, 0.85)', # Celeste pastel
+                line=dict(color='#0288D1', width=3),
                 name=f'Agua ({pct_lleno*100:.2f}% lleno)'
             ))
 
@@ -603,7 +603,7 @@ with tab_seccion:
             height=500,
             margin=dict(l=20, r=20, t=50, b=20),
             paper_bgcolor="#FFF0F5",
-            plot_bgcolor="#E8F5E9",
+            plot_bgcolor="#E3F2FD",
             showlegend=True
         )
         
@@ -639,14 +639,14 @@ with tab_perfil:
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_terreno_nodes,
         mode='lines',
-        line=dict(color='#2E7D32', width=3),
+        line=dict(color='#0288D1', width=3),
         name='Terreno Natural'
     ))
     
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_fondo_nodes,
         mode='lines',
-        line=dict(color='#8B0000', width=5),
+        line=dict(color='#1A237E', width=5),
         name='Tubería (Fondo)'
     ))
     
@@ -661,17 +661,17 @@ with tab_perfil:
             type="rect",
             x0=x_c - ancho_bz, x1=x_c + ancho_bz,
             y0=y_bottom, y1=y_top,
-            fillcolor="rgba(165, 214, 167, 0.5)",
-            line=dict(color="#8B0000", width=2)
+            fillcolor="rgba(179, 229, 252, 0.5)",
+            line=dict(color="#1A237E", width=2)
         )
         
         fig_cad.add_annotation(
             x=x_c, y=y_top + 0.35,
             text=f"<b>{buzones_names[i]}</b><br>CT: {y_top:.2f}<br>CF: {y_bottom:.2f}<br>H: {h_bz:.2f}m",
             showarrow=False,
-            font=dict(size=14, color="#8B0000", family="VT323"),
+            font=dict(size=14, color="#1A237E", family="VT323"),
             bgcolor="#FFF0F5",
-            bordercolor="#8B0000",
+            bordercolor="#1A237E",
             borderwidth=1,
             align="center"
         )
@@ -687,9 +687,9 @@ with tab_perfil:
             x=x_mid, y=y_mid,
             text=f"DN {d_mm:.0f}mm | L = {long_m:.2f}m | S = {pend_pct:.2f}%",
             showarrow=False,
-            font=dict(size=14, color="#2E7D32", family="VT323"),
-            bgcolor="#E8F5E9",
-            bordercolor="#2E7D32",
+            font=dict(size=14, color="#0288D1", family="VT323"),
+            bgcolor="#E3F2FD",
+            bordercolor="#0288D1",
             borderwidth=1
         )
 
@@ -700,16 +700,16 @@ with tab_perfil:
         ),
         xaxis=dict(
             title="PROGRESIVA / DISTANCIA (m)",
-            showgrid=True, gridcolor='#D0E1D4',
+            showgrid=True, gridcolor='#BBDEFB',
             zeroline=False
         ),
         yaxis=dict(
             title="ELEVACION / COTA (m.s.n.m.)",
-            showgrid=True, gridcolor='#D0E1D4',
+            showgrid=True, gridcolor='#BBDEFB',
             zeroline=False
         ),
         paper_bgcolor="#FFF0F5",
-        plot_bgcolor="#E8F5E9",
+        plot_bgcolor="#E3F2FD",
         height=550,
         showlegend=True
     )
