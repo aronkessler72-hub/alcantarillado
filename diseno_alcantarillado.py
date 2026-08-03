@@ -7,90 +7,108 @@ import io
 import os
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION DE PAGINA Y ESTILOS (VINTAGE MICROSOFT / WIN95 STYLE)
+# CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y MENTA / CUADRICULA)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Alcantarillado Sanitario",
+    page_title="Sistema de Alcantarillado Sanitario [Retro Pixel]",
     layout="wide"
 )
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Consolas&family=Courier+New&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
     
-    /* 1. Forzar tipografía estilo consola retro en toda la aplicación */
+    /* 1. Tipografía de píxeles en toda la aplicación */
     html, body, [class*="st-"], [class*="css"], div, span, p, label, input, button, table, td, th {
-        font-family: 'Consolas', 'Courier New', monospace !important;
+        font-family: 'VT323', monospace !important;
+        font-size: 19px !important;
     }
     
-    /* 2. Fondo general con un tono gris clásico estilo ventana de Windows antiguo */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Press Start 2P', monospace !important;
+        font-size: 14px !important;
+        color: #8B0000;
+    }
+    
+    /* 2. Fondo de cuadrícula (gráfico) de estilo papel de cuaderno en tonos menta y rosa */
     .stApp {
-        background-color: #C0C0C0;
+        background-color: #E8F5E9;
+        background-image: 
+            linear-gradient(to right, #D0E1D4 1px, transparent 1px),
+            linear-gradient(to bottom, #D0E1D4 1px, transparent 1px);
+        background-size: 20px 20px;
     }
 
-    /* Contenedor principal estilo ventana de diálogo retro */
+    /* 3. Ventanas de aplicación de estilo retro en rosa y menta */
     .retro-window {
-        background-color: #ECECEC;
-        border-top: 2px solid #FFFFFF;
-        border-left: 2px solid #FFFFFF;
-        border-right: 2px solid #404040;
-        border-bottom: 2px solid #404040;
-        box-shadow: inset 1px 1px #FFFFFFFF, inset -1px -1px #000000FF;
-        padding: 10px;
-        margin-bottom: 15px;
+        background-color: #FFF0F5; /* Rosa muy suave / pastel */
+        border: 3px solid #8B0000;
+        box-shadow: 4px 4px 0px #2E7D32; /* Sombra verde menta oscuro / píxel */
+        padding: 12px;
+        margin-bottom: 20px;
     }
 
-    /* Estilo clásico de barra de título de ventana antigua */
+    /* Barra de título estilo ventana antigua con botones pixelados [_][□][X] */
     .retro-titlebar {
-        background: linear-gradient(90deg, #000080, #1084d0);
-        color: white;
-        padding: 4px 8px;
-        font-weight: bold;
-        font-size: 13px;
-        letter-spacing: 1px;
+        background: linear-gradient(90deg, #8B0000, #C2185B);
+        color: #A5D6A7; /* Menta */
+        padding: 6px 10px;
+        font-family: 'Press Start 2P', monospace !important;
+        font-size: 10px !important;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
+        border-bottom: 2px solid #2E7D32;
+    }
+    
+    .pixel-buttons {
+        font-family: 'Press Start 2P', monospace !important;
+        background-color: #A5D6A7;
+        color: #8B0000;
+        padding: 2px 5px;
+        border: 1px solid #000;
+        font-size: 9px;
+        letter-spacing: -2px;
     }
 
-    /* 3. Forzar tipografía específica dentro de las tablas de datos (st.dataframe) */
+    /* 4. Tablas y DataFrames con aspecto de píxel */
     [data-testid="stDataFrame"] *, 
     [data-testid="stTable"] *,
     div[role="gridcell"], 
     div[role="columnheader"] {
-        font-family: 'Consolas', 'Courier New', monospace !important;
+        font-family: 'VT323', monospace !important;
+        font-size: 20px !important;
     }
 
-    /* 4. Ajuste de celdas */
-    div[role="gridcell"] {
-        font-weight: 700 !important;
-    }
-
-    /* Botones con relieve 3D clásico estilo Windows 95 */
+    /* 5. Botones con estilo retro pixelado (Rosa / Menta) */
     .stButton>button, .stDownloadButton>button {
-        background-color: #C0C0C0 !important;
-        border-top: 2px solid #FFFFFF !important;
-        border-left: 2px solid #FFFFFF !important;
-        border-right: 2px solid #404040 !important;
-        border-bottom: 2px solid #404040 !important;
-        color: #000000 !important;
-        font-family: 'Consolas', monospace !important;
-        font-weight: bold !important;
+        background-color: #F8BBD0 !important;
+        border: 2px solid #8B0000 !important;
+        box-shadow: 3px 3px 0px #2E7D32 !important;
+        color: #8B0000 !important;
+        font-family: 'Press Start 2P', monospace !important;
+        font-size: 9px !important;
         border-radius: 0px !important;
+        padding: 10px !important;
     }
     
     .stButton>button:active, .stDownloadButton>button:active {
-        border-top: 2px solid #404040 !important;
-        border-left: 2px solid #404040 !important;
-        border-right: 2px solid #FFFFFF !important;
-        border-bottom: 2px solid #FFFFFF !important;
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0px #2E7D32 !important;
+    }
+    
+    /* Cajas de texto y selectores estilo retro */
+    input, select, textarea {
+        background-color: #FFFFFF !important;
+        border: 2px solid #2E7D32 !important;
+        color: #8B0000 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# ENCABEZADO CON LOGOS Y DATOS PEQUEÑOS (ESTILO VENTANA RETRO)
+# ENCABEZADO CON VENTANA RETRO PIXEL ART (ROSA Y MENTA)
 # -----------------------------------------------------------------------------
 col_logo_izq, col_titulo, col_logo_der = st.columns([1.5, 7, 1.5])
 
@@ -98,33 +116,33 @@ with col_logo_izq:
     if os.path.exists("logo_izquierda.png"):
         st.image("logo_izquierda.png", use_container_width=True)
     else:
-        st.markdown("<div style='border: 1px dashed gray; text-align:center; padding:20px; font-size:10px;'>[LOGO IZQ]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='border: 2px dashed #8B0000; background: #A5D6A7; text-align:center; padding:15px; font-size:12px; color:#8B0000;'>[LOGO IZQ]</div>", unsafe_allow_html=True)
 
 with col_titulo:
     st.markdown("""
     <div class="retro-window">
         <div class="retro-titlebar">
-            <span>SYS_ALCANTARILLADO.EXE - MÓDULO PRINCIPAL</span>
-            <span>[_][□][X]</span>
+            <span>SYS_ALCANTARILLADO.PIXEL_EXE</span>
+            <span class="pixel-buttons">_ □ X</span>
         </div>
         <div style="
             background-color: #8B0000;
-            color: white;
-            padding: 10px 12px;
-            border: 2px inset #5A0000;
+            color: #A5D6A7;
+            padding: 12px;
+            border: 2px solid #2E7D32;
             text-align: center;
             margin-bottom: 5px;
         ">
-            <div style="font-size: 18px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;">
+            <div style="font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.6; color: #FFFFFF; margin-bottom: 6px;">
                 SISTEMA DE ALCANTARILLADO SANITARIO
             </div>
-            <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #E0E0E0; text-transform: uppercase;">
-                CÁLCULO HIDRÁULICO (MODO COMPATIBILIDAD VINTAGE)
+            <div style="font-family: 'VT323', monospace; font-size: 22px; color: #A5D6A7; letter-spacing: 1px;">
+                MÓDULO DE CÁLCULO HIDRÁULICO RETRO [ROSA Y MENTA]
             </div>
-            <hr style="border: 0; border-top: 1px dashed rgba(255, 255, 255, 0.5); margin: 6px 0;">
-            <div style="font-size: 9px; font-weight: 400; line-height: 1.3; color: #F0F0F0;">
-                POR: Condori Bustincio, Norka Guadalupe 240852 &nbsp;|&nbsp; 
-                CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp; 
+            <hr style="border: 0; border-top: 2px dashed #A5D6A7; margin: 8px 0;">
+            <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
+                AUTORA: Condori Bustincio, Norka Guadalupe (240852) &nbsp;|&nbsp; 
+                CURSO: Abastecimiento y Alcantarillado &nbsp;|&nbsp; 
                 DOCENTE: Fernández Sila, Guillermo Nestor
             </div>
         </div>
@@ -135,7 +153,7 @@ with col_logo_der:
     if os.path.exists("logo_derecha.png"):
         st.image("logo_derecha.png", use_container_width=True)
     else:
-        st.markdown("<div style='border: 1px dashed gray; text-align:center; padding:20px; font-size:10px;'>[LOGO DER]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='border: 2px dashed #8B0000; background: #A5D6A7; text-align:center; padding:15px; font-size:12px; color:#8B0000;'>[LOGO DER]</div>", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # INICIALIZACION DE DATOS EN SESSION_STATE CON GUARDADO LOCAL
@@ -178,14 +196,14 @@ def generar_300_tramos():
             
     return pd.DataFrame(tramos)
 
-# Panel en la barra lateral para importar y exportar tus avances con estética retro
+# Barra lateral con aspecto de ventana de programa de dibujo / error retro
 st.sidebar.markdown("""
-<div style="background-color: #000080; color: white; padding: 4px; font-weight: bold; font-size: 11px; margin-bottom: 10px;">
-    📁 PANEL DE ARCHIVOS [IO]
+<div style="background-color: #2E7D32; color: #FFF; padding: 6px; font-family: 'Press Start 2P'; font-size: 9px; margin-bottom: 10px; border: 2px solid #8B0000;">
+    [!] ARCHIVOS_SYS.DAT
 </div>
 """, unsafe_allow_html=True)
 
-archivo_subido = st.sidebar.file_uploader("Cargar avance previo (Excel o CSV)", type=["csv", "xlsx"])
+archivo_subido = st.sidebar.file_uploader("Cargar avance previo (.csv / .xlsx)", type=["csv", "xlsx"])
 
 if "df_tramos_base" not in st.session_state:
     if archivo_subido is not None:
@@ -204,32 +222,32 @@ else:
         else:
             st.session_state.df_tramos_base = pd.read_excel(archivo_subido)
 
-PALETA_COLECTORES_CLAROS = [
-    "#EBF5FB", "#E8F8F5", "#FEF9E7", "#F5EEF8",
-    "#FBEEE6", "#EAEDED", "#EAF2F8", "#FEF5E7"
+PALETA_COLECTORES_PASTEL = [
+    "#FCE4EC", "#E8F5E9", "#FFFDE7", "#F3E5F5",
+    "#FBE9E7", "#E0F2F1", "#E3F2FD", "#FFF3E0"
 ]
 
 def estilar_colector(val):
     try:
         num = int(str(val).replace("COLECTOR", "").strip())
-        color = PALETA_COLECTORES_CLAROS[(num - 1) % len(PALETA_COLECTORES_CLAROS)]
-        return f"background-color: {color}; color: #2C3E50; font-weight: bold;"
+        color = PALETA_COLECTORES_PASTEL[(num - 1) % len(PALETA_COLECTORES_PASTEL)]
+        return f"background-color: {color}; color: #8B0000; font-weight: bold;"
     except:
         return ""
 
 def estilar_cumplimiento(val):
     if str(val).startswith("CUMPLE"):
-        return "background-color: #D4EDDA; color: #155724; font-weight: bold;"
+        return "background-color: #A5D6A7; color: #1B5E20; font-weight: bold;"
     else:
-        return "background-color: #F8D7DA; color: #721C24; font-weight: bold;"
+        return "background-color: #FFCDD2; color: #B71C1C; font-weight: bold;"
 
 # -----------------------------------------------------------------------------
 # PESTANAS PRINCIPALES
 # -----------------------------------------------------------------------------
 tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
-    "1. PARÁMETROS DE DISEÑO", 
+    "1. PARÁMETROS", 
     "2. PLANILLA HIDRÁULICA", 
-    "3. DETALLE DE TRAMO Y TIRANTE DE AGUA",
+    "3. DETALLE Y TIRANTE",
     "4. PERFIL LONGITUDINAL"
 ])
 
@@ -237,7 +255,7 @@ tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
 # PESTANA 1: PARAMETROS GENERALES DINAMICOS
 # =============================================================================
 with tab_param:
-    st.subheader("PARÁMETROS GENERALES DE DISEÑO Y CAUDAL UNITARIO")
+    st.subheader("PARÁMETROS GENERALES DE DISEÑO [CONFIG]")
     
     col_p1, col_p2 = st.columns(2)
     
@@ -412,7 +430,7 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
 # PESTANA 2: PLANILLA DE CALCULO EN VIVO
 # =============================================================================
 with tab_planilla:
-    st.subheader("PLANILLA DE CÁLCULO HIDRÁULICO PARA UN PROYECTO DE ALCANTARILLADO SANITARIO")
+    st.subheader("PLANILLA DE CÁLCULO HIDRÁULICO [GRID]")
     
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
@@ -440,7 +458,7 @@ with tab_planilla:
 
     col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("💾 Guardar Cambios en PC", use_container_width=True):
+        if st.button("💾 Guardar Cambios", use_container_width=True):
             df_edited.to_csv(ARCHIVO_PROYECTO, index=False)
             st.success("¡Guardado con éxito!")
             
@@ -451,7 +469,7 @@ with tab_planilla:
         buffer.seek(0)
         
         st.download_button(
-            label="📥 Descargar Planilla en Excel",
+            label="📥 Descargar Planilla Excel",
             data=buffer,
             file_name="proyecto_alcantarillado_avances.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -461,7 +479,11 @@ with tab_planilla:
     duplicados = df_edited[df_edited.duplicated(subset=['DE', 'A'], keep=False)]
     if not duplicados.empty:
         tramos_dupl_str = ", ".join(duplicados['TRAMO_ID'].unique())
-        st.error(f"⚠️ **ALERTA DE TRAMOS DUPLICADOS DETECTADA**: Se encontraron cámaras conexas repetidas en: **{tramos_dupl_str}**.")
+        st.markdown(f"""
+        <div style="background-color: #FFCDD2; border: 2px solid #B71C1C; padding: 10px; color: #B71C1C; margin: 10px 0;">
+            [!] <b>ALERTA DE ERROR PIXEL</b>: Se encontraron cámaras conexas repetidas en: <b>{tramos_dupl_str}</b>.
+        </div>
+        """, unsafe_allow_html=True)
 
     resultados_lista = []
     for colector_tag, df_g in df_edited.groupby('COLECTOR', sort=False):
@@ -475,7 +497,7 @@ with tab_planilla:
             
     df_res_completo = pd.DataFrame(resultados_lista)
     
-    st.markdown("### RESULTADOS AUTOMÁTICOS DEL SOLVER")
+    st.markdown("### RESULTADOS AUTOMÁTICOS")
     
     columnas_solver_ver = [
         "COLECTOR", "CÁMARA DE", "CÁMARA A", "NOMBRE ID",
@@ -504,7 +526,7 @@ with tab_planilla:
 # PESTANA 3: DETALLE DE TRAMO Y TIRANTE
 # =============================================================================
 with tab_seccion:
-    st.subheader("DETALLE DE TRAMO Y VISUALIZACIÓN DEL TIRANTE DE AGUA")
+    st.subheader("DETALLE DE TRAMO Y VISUALIZACIÓN DEL TIRANTE [PIXEL ART]")
     
     lista_tramos_opciones = df_res_completo['NOMBRE ID'].tolist()
     tramo_seleccionado = st.selectbox("SELECCIONAR EL TRAMO A ANALIZAR:", lista_tramos_opciones)
@@ -514,7 +536,7 @@ with tab_seccion:
     col_t1, col_t2 = st.columns([1, 1])
     
     with col_t1:
-        st.markdown(f"#### PARAMETROS DETALLADOS DEL {tramo_seleccionado}")
+        st.markdown(f"##### PARAMETROS DEL {tramo_seleccionado}")
         df_tabla_excel = pd.DataFrame([
             {"PARAMETRO": "Longitud Tributaria Propia (m)", "VALOR": data_t['LONGITUD TRIBUTARIA PROPIA (m)']},
             {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONG TRIBUTARIA ACUMULADA (m)']},
@@ -533,7 +555,7 @@ with tab_seccion:
         st.dataframe(df_tabla_excel, use_container_width=True, hide_index=True)
         
     with col_t2:
-        st.markdown("#### SECCION TRANSVERSAL CON NIVEL DE AGUA REAL")
+        st.markdown("##### SECCIÓN TRANSVERSAL [ESTILO DIBUJO RETRO]")
         
         D_val = data_t['D_m']
         y_val = data_t['Tirante_m']
@@ -550,7 +572,7 @@ with tab_seccion:
         fig_pipe.add_trace(go.Scatter(
             x=x_pipe, y=y_pipe,
             mode='lines',
-            line=dict(color='black', width=4),
+            line=dict(color='#8B0000', width=6),
             name='Tubería'
         ))
         
@@ -566,31 +588,32 @@ with tab_seccion:
             fig_pipe.add_trace(go.Scatter(
                 x=x_water, y=y_water,
                 fill='toself',
-                fillcolor='rgba(30, 144, 255, 0.65)',
-                line=dict(color='blue', width=2),
+                fillcolor='rgba(165, 214, 167, 0.85)', # Menta pastel
+                line=dict(color='#2E7D32', width=3),
                 name=f'Agua ({pct_lleno*100:.2f}% lleno)'
             ))
 
         fig_pipe.update_layout(
             title=dict(
-                text=f"<b>Llenado de Tubería: {pct_lleno*100:.2f}% (Tirante y = {y_val:.4f} m)</b>",
-                font=dict(size=18, family="Consolas")
+                text=f"<b>LLENADO: {pct_lleno*100:.2f}% (Tirante y = {y_val:.4f} m)</b>",
+                font=dict(size=14, family="VT323")
             ),
             xaxis=dict(range=[-R*1.2, R*1.2], constrain='domain', visible=False),
             yaxis=dict(range=[-R*0.2, D_val*1.2], scaleanchor="x", scaleratio=1, visible=False),
-            height=600,
+            height=500,
             margin=dict(l=20, r=20, t=50, b=20),
-            template="plotly_white",
+            paper_bgcolor="#FFF0F5",
+            plot_bgcolor="#E8F5E9",
             showlegend=True
         )
         
         st.plotly_chart(fig_pipe, use_container_width=True)
 
 # =============================================================================
-# PESTANA 4: PERFIL LONGITUDINAL ESTILO CAD
+# PESTANA 4: PERFIL LONGITUDINAL ESTILO CAD RETRO
 # =============================================================================
 with tab_perfil:
-    st.subheader("PERFIL LONGITUDINAL")
+    st.subheader("PERFIL LONGITUDINAL [CAD PIXEL]")
     
     lista_cols = df_res_completo['COLECTOR'].unique().tolist()
     col_elegido = st.selectbox("SELECCIONAR COLECTOR PARA EL PERFIL:", lista_cols)
@@ -616,14 +639,14 @@ with tab_perfil:
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_terreno_nodes,
         mode='lines',
-        line=dict(color='#228B22', width=2),
+        line=dict(color='#2E7D32', width=3),
         name='Terreno Natural'
     ))
     
     fig_cad.add_trace(go.Scatter(
         x=nodos_x, y=cota_fondo_nodes,
         mode='lines',
-        line=dict(color='#8B4513', width=5),
+        line=dict(color='#8B0000', width=5),
         name='Tubería (Fondo)'
     ))
     
@@ -638,17 +661,17 @@ with tab_perfil:
             type="rect",
             x0=x_c - ancho_bz, x1=x_c + ancho_bz,
             y0=y_bottom, y1=y_top,
-            fillcolor="rgba(128, 128, 128, 0.4)",
-            line=dict(color="black", width=1.5)
+            fillcolor="rgba(165, 214, 167, 0.5)",
+            line=dict(color="#8B0000", width=2)
         )
         
         fig_cad.add_annotation(
             x=x_c, y=y_top + 0.35,
             text=f"<b>{buzones_names[i]}</b><br>CT: {y_top:.2f}<br>CF: {y_bottom:.2f}<br>H: {h_bz:.2f}m",
             showarrow=False,
-            font=dict(size=9, color="black", family="Consolas"),
-            bgcolor="#FFFFCC",
-            bordercolor="gray",
+            font=dict(size=14, color="#8B0000", family="VT323"),
+            bgcolor="#FFF0F5",
+            bordercolor="#8B0000",
             borderwidth=1,
             align="center"
         )
@@ -664,35 +687,36 @@ with tab_perfil:
             x=x_mid, y=y_mid,
             text=f"DN {d_mm:.0f}mm | L = {long_m:.2f}m | S = {pend_pct:.2f}%",
             showarrow=False,
-            font=dict(size=9, color="#8B0000", family="Consolas"),
-            bgcolor="rgba(255, 255, 255, 0.8)",
-            bordercolor="#8B0000",
+            font=dict(size=14, color="#2E7D32", family="VT323"),
+            bgcolor="#E8F5E9",
+            bordercolor="#2E7D32",
             borderwidth=1
         )
 
     fig_cad.update_layout(
         title=dict(
             text=f"<b>PERFIL LONGITUDINAL - {col_elegido} ({buzones_names[0]} a {buzones_names[-1]})</b>",
-            x=0.5, font=dict(size=16, family="Consolas")
+            x=0.5, font=dict(size=14, family="Press Start 2P")
         ),
         xaxis=dict(
             title="PROGRESIVA / DISTANCIA (m)",
-            showgrid=True, gridcolor='lightgray',
+            showgrid=True, gridcolor='#D0E1D4',
             zeroline=False
         ),
         yaxis=dict(
             title="ELEVACION / COTA (m.s.n.m.)",
-            showgrid=True, gridcolor='lightgray',
+            showgrid=True, gridcolor='#D0E1D4',
             zeroline=False
         ),
-        template="plotly_white",
+        paper_bgcolor="#FFF0F5",
+        plot_bgcolor="#E8F5E9",
         height=550,
         showlegend=True
     )
     
     st.plotly_chart(fig_cad, use_container_width=True)
     
-    st.markdown("#### GUITARRA DE DATOS DE CAMPO (GUITARRA CAD)")
+    st.markdown("#### GUITARRA DE DATOS DE CAMPO [ESTILO TABLA PIXEL]")
     
     filas_guitarra = []
     
