@@ -142,7 +142,8 @@ with col_titulo:
             <hr style="border: 0; border-top: 2px dashed #B3E5FC; margin: 8px 0;">
             <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
                 AUTORA: Condori Bustincio, Norka Guadalupe (240852) &nbsp;|&nbsp; 
-                CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp; 
+                CURSO: Abastecimiento de Agua y Alcantarillado &nbsp;|&nbsp;
+                GRUPO: A &nbsp;|&nbsp;
                 DOCENTE: Fernández Sila, Guillermo Nestor
             </div>
         </div>
