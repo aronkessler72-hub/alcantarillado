@@ -385,6 +385,13 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     tirante = (D_com / 2.0) * (1.0 - np.cos(theta_sol / 2.0))
     relacion_y_D = tirante / D_com if D_com > 0 else 0.0
     
+    # Nuevas variables de la tabla solicitada (Espejo de agua y Número de Froude)
+    espejo_agua = D_com * np.sin(theta_sol / 2.0)
+    # Número de Froude: Fr = v / sqrt(g * y_hidraulico) donde y_hidraulico = Area / Espejo de agua
+    y_hidraulico = area / espejo_agua if espejo_agua > 0 else tirante
+    g = 9.81
+    num_froude = v_real / np.sqrt(g * y_hidraulico) if y_hidraulico > 0 else 0.0
+
     tau = 9810.0 * r_hid * S
     
     cumple_v = "CUMPLE" if (0.60 <= v_real <= 5.00) else "NO CUMPLE"
@@ -412,6 +419,22 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
         "PENDIENTE (m/m)": f"{S:.4f}",
         "DIÁMETRO CALCULADO (m)": f"{D_calc:.4f}",
         "DIÁMETRO COMERCIAL INTERIOR (m)": f"{D_com:.4f}",
+        # Nuevas variables individuales para la tabla detallada estilo Solver
+        "Diámetro (m)": f"{D_com:.4f}",
+        "Caudal (m3/s)": f"{q_diseno_m3s:.7f}",
+        "Pendiente (m/m)": f"{S:.4f}",
+        "Rugosidad Manning (n)": f"{n:.3f}",
+        "K": f"{K:.8f}",
+        "Ángulo (rad)": f"{theta_sol:.8f}",
+        "Área Mojada (m2)": f"{area:.8f}",
+        "Perímetro Mojado (m)": f"{perimetro:.8f}",
+        "Radio Hidráulico (m)": f"{r_hid:.8f}",
+        "Velocidad (m/s)": f"{v_real:.8f}",
+        "Tirante De Agua (m)": f"{tirante:.8f}",
+        "Espejo De Agua (m)": f"{espejo_agua:.8f}",
+        "Número De Froude": f"{num_froude:.8f}",
+        "Tensión Tractiva (pa)": f"{tau:.4f}",
+        # ----------------------------------------------------
         "CAPACIDAD AL 75% (L/s)": f"{(Q_75 * 1000.0):.4f}",
         "VELOCIDAD AL 75% (m/s)": f"{V_75:.4f}",
         "TIRANTE (m)": f"{tirante:.4f}",
@@ -499,6 +522,22 @@ with tab_planilla:
             
     df_res_completo = pd.DataFrame(resultados_lista)
     
+    # -------------------------------------------------------------------------
+    # NUEVA TABLA INTERMEDIA (ESTILO SOLVER EXCEL)
+    # -------------------------------------------------------------------------
+    st.markdown("### ANÁLISIS HIDRÁULICO DETALLADO (ESTILO SOLVER)")
+    columnas_solver_detallado = [
+        "COLECTOR", "NOMBRE ID", "Diámetro (m)", "Caudal (m3/s)", "Pendiente (m/m)",
+        "Rugosidad Manning (n)", "K", "Ángulo (rad)", "Área Mojada (m2)",
+        "Perímetro Mojado (m)", "Radio Hidráulico (m)", "Velocidad (m/s)",
+        "Tirante De Agua (m)", "Espejo De Agua (m)", "Número De Froude", "Tensión Tractiva (pa)"
+    ]
+    df_solver_det_view = df_res_completo[columnas_solver_detallado]
+    st.dataframe(df_solver_det_view, use_container_width=True)
+
+    # -------------------------------------------------------------------------
+    # SEGUNDA TABLA: RESULTADOS AUTOMÁTICOS
+    # -------------------------------------------------------------------------
     st.markdown("### RESULTADOS AUTOMÁTICOS")
     
     columnas_solver_ver = [
