@@ -5,6 +5,8 @@ from scipy.optimize import fsolve
 import plotly.graph_objects as go
 import io
 import os
+import openpyxl
+import xlsxwriter
 
 # -----------------------------------------------------------------------------
 # CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y CELESTE / CUADRICULA)
