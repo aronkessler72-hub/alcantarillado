@@ -7,7 +7,7 @@ import io
 import os
 
 # -----------------------------------------------------------------------------
-# CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y CELESTE / CUADRICULA)
+# CONFIGURACION DE PAGINA Y ESTILOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Sistema de Alcantarillado Sanitario ",
@@ -107,9 +107,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
-# ENCABEZADO CON VENTANA RETRO PIXEL ART (ROSA Y CELESTE)
-# -----------------------------------------------------------------------------
+
+# ENCABEZADO CON VENTANA RETRO PIXEL ART 
+
 col_logo_izq, col_titulo, col_logo_der = st.columns([1.5, 7, 1.5])
 
 with col_logo_izq:
@@ -137,12 +137,12 @@ with col_titulo:
                 SISTEMA DE ALCANTARILLADO SANITARIO
             </div>
             <div style="font-family: 'VT323', monospace; font-size: 22px; color: #B3E5FC; letter-spacing: 1px;">
-                MÓDULO DE CÁLCULO HIDRÁULICO RETRO
+                MÓDULO DE CÁLCULO 
             </div>
             <hr style="border: 0; border-top: 2px dashed #B3E5FC; margin: 8px 0;">
             <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
                 AUTORA: Condori Bustincio, Norka Guadalupe (240852) &nbsp;|&nbsp; 
-                CURSO: Abastecimiento y Alcantarillado &nbsp;|&nbsp; 
+                CURSO: Abastecimiento de agua y Alcantarillado &nbsp;|&nbsp; 
                 DOCENTE: Fernández Sila, Guillermo Nestor
             </div>
         </div>
@@ -155,9 +155,9 @@ with col_logo_der:
     else:
         st.markdown("<div style='border: 2px dashed #1A237E; background: #B3E5FC; text-align:center; padding:15px; font-size:12px; color:#1A237E;'>[LOGO DER]</div>", unsafe_allow_html=True)
 
-# -----------------------------------------------------------------------------
+
 # INICIALIZACION DE DATOS EN SESSION_STATE CON GUARDADO LOCAL
-# -----------------------------------------------------------------------------
+
 OPCIONES_DIAMETROS = [0.1500, 0.1536, 0.2000, 0.2500, 0.3000, 0.3500, 0.4000, 0.4500, 0.5000]
 ARCHIVO_PROYECTO = "proyecto_alcantarillado.csv"
 
@@ -241,9 +241,9 @@ def estilar_cumplimiento(val):
     else:
         return "background-color: #FFCDD2; color: #B71C1C; font-weight: bold;"
 
-# -----------------------------------------------------------------------------
+
 # PESTANAS PRINCIPALES
-# -----------------------------------------------------------------------------
+
 tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
     "1. PARÁMETROS", 
     "2. PLANILLA HIDRÁULICA", 
@@ -251,9 +251,9 @@ tab_param, tab_planilla, tab_seccion, tab_perfil = st.tabs([
     "4. PERFIL LONGITUDINAL"
 ])
 
-# =============================================================================
+
 # PESTANA 1: PARAMETROS GENERALES DINAMICOS
-# =============================================================================
+
 with tab_param:
     st.subheader("PARÁMETROS GENERALES DE DISEÑO [CONFIG]")
     
@@ -327,9 +327,9 @@ with tab_param:
         ])
         st.dataframe(df_params, use_container_width=True, hide_index=True)
 
-# =============================================================================
+
 # FUNCION CON FORMULAS Y FORMATO DE 4 DECIMALES EXACTOS
-# =============================================================================
+
 def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_acum, q_inicio_anterior):
     l_propia = float(row['Long_m'])
     
@@ -427,9 +427,9 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
         "Long_m": l_propia
     }
 
-# =============================================================================
+
 # PESTANA 2: PLANILLA DE CALCULO EN VIVO
-# =============================================================================
+
 with tab_planilla:
     st.subheader("PLANILLA DE CÁLCULO HIDRÁULICO [GRID]")
     
@@ -537,9 +537,9 @@ with tab_planilla:
     
     st.dataframe(df_res_styled, use_container_width=True)
 
-# =============================================================================
+
 # PESTANA 3: DETALLE DE TRAMO Y TIRANTE
-# =============================================================================
+
 with tab_seccion:
     st.subheader("DETALLE DE TRAMO Y VISUALIZACIÓN DEL TIRANTE [PIXEL ART]")
     
@@ -624,9 +624,8 @@ with tab_seccion:
         
         st.plotly_chart(fig_pipe, use_container_width=True)
 
-# =============================================================================
 # PESTANA 4: PERFIL LONGITUDINAL ESTILO CAD RETRO (CON EFECTO 3D EN BUZONES)
-# =============================================================================
+
 with tab_perfil:
     st.subheader("PERFIL LONGITUDINAL [CAD PIXEL 3D]")
     
