@@ -10,7 +10,7 @@ import os
 # CONFIGURACION DE PAGINA Y ESTILOS (PIXEL ART / ROSA Y CELESTE / CUADRICULA)
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Sistema de Alcantarillado Sanitario [Retro Pixel Celeste]",
+    page_title="Sistema de Alcantarillado Sanitario ",
     layout="wide"
 )
 
@@ -137,7 +137,7 @@ with col_titulo:
                 SISTEMA DE ALCANTARILLADO SANITARIO
             </div>
             <div style="font-family: 'VT323', monospace; font-size: 22px; color: #B3E5FC; letter-spacing: 1px;">
-                MÓDULO DE CÁLCULO HIDRÁULICO RETRO [ROSA Y CELESTE]
+                MÓDULO DE CÁLCULO HIDRÁULICO RETRO
             </div>
             <hr style="border: 0; border-top: 2px dashed #B3E5FC; margin: 8px 0;">
             <div style="font-family: 'VT323', monospace; font-size: 18px; color: #FFCDD2;">
