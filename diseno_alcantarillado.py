@@ -346,9 +346,9 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
     q_diseno_ls = max(q_tot_calculado, float(row['Q_min_RNE']))
     
     q_i_ls = q_inicio_anterior
-    q_f_ls = q_i_ls + q_diseno_ls
+    q_f_ls = q_diseno_ls
     
-    q_diseno_m3s = q_f_ls / 1000.0
+    q_diseno_m3s = q_diseno_ls / 1000.0
     
     c_f_de = float(row['Cota_Fondo_DE'])
     c_f_a = float(row['Cota_Fondo_A'])
@@ -493,7 +493,7 @@ with tab_planilla:
         for _, row in df_g.iterrows():
             l_acum += float(row['Long_m'])
             res = calcular_hidraulica_tramo_completo(row, q_unitario, coef_erradas, coef_infilt, l_acum, q_inicio)
-            q_inicio = float(res['Qf (L/s)'])
+            q_inicio = float(res['CAUDAL TOTAL (L/s)'])
             resultados_lista.append(res)
             
     df_res_completo = pd.DataFrame(resultados_lista)
@@ -517,9 +517,14 @@ with tab_planilla:
     
     df_solver_view = df_res_completo[columnas_solver_ver]
     
+    # CORRECCIÓN EN LA TABLA DEL SOLVER:
+    # Se utiliza .style.map(...) de manera robusta y compatible con Pandas moderno, asegurando 
+    # que las columnas estén presentes para evitar KeyError en subset.
+    subset_cols = [c for c in ['VALIDACIÓN VELOCIDAD', 'VALIDACIÓN TENSIÓN TRACTIVA'] if c in df_solver_view.columns]
+    
     df_res_styled = df_solver_view.style \
-        .map(estilar_colector, subset=['COLECTOR']) \
-        .map(estilar_cumplimiento, subset=['VALIDACIÓN VELOCIDAD', 'VALIDACIÓN TENSIÓN TRACTIVA'])
+        .map(estilar_colector, subset=['COLECTOR'] if 'COLECTOR' in df_solver_view.columns else None) \
+        .map(estilar_cumplimiento, subset=subset_cols)
     
     st.dataframe(df_res_styled, use_container_width=True)
 
@@ -542,8 +547,6 @@ with tab_seccion:
             {"PARAMETRO": "Longitud Tributaria Propia (m)", "VALOR": data_t['LONGITUD TRIBUTARIA PROPIA (m)']},
             {"PARAMETRO": "Longitud Acumulada (m)", "VALOR": data_t['LONG TRIBUTARIA ACUMULADA (m)']},
             {"PARAMETRO": "Caudal Total (L/s)", "VALOR": data_t['CAUDAL TOTAL (L/s)']},
-            {"PARAMETRO": "Qi (L/s)", "VALOR": data_t['Qi (L/s)']},
-            {"PARAMETRO": "Qf (L/s)", "VALOR": data_t['Qf (L/s)']},
             {"PARAMETRO": "Pendiente (m/m)", "VALOR": data_t['PENDIENTE (m/m)']},
             {"PARAMETRO": "Diametro Calculado (m)", "VALOR": data_t['DIÁMETRO CALCULADO (m)']},
             {"PARAMETRO": "Diametro Comercial Interior (m)", "VALOR": data_t['DIÁMETRO COMERCIAL INTERIOR (m)']},
