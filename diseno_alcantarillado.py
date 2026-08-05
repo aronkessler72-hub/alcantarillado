@@ -433,6 +433,12 @@ def calcular_hidraulica_tramo_completo(row, q_unit, c_erradas, c_infilt, long_ac
 with tab_planilla:
     st.subheader("PLANILLA DE CÁLCULO HIDRÁULICO [GRID]")
     
+    st.markdown("""
+    <div style="background-color: #E3F2FD; border: 2px dashed #0288D1; padding: 8px; color: #1A237E; margin-bottom: 10px; font-size: 16px;">
+        💡 <b>TIP DE EXCEL:</b> Puedes seleccionar un rango de celdas en tu Excel (por ejemplo, Longitudes, Cotas o Diámetros), copiarlas (<kbd>Ctrl+C</kbd>) y hacer clic o pegarlas (<kbd>Ctrl+V</kbd>) directamente dentro de las celdas de esta tabla interactiva.
+    </div>
+    """, unsafe_allow_html=True)
+    
     df_edited = st.data_editor(
         st.session_state.df_tramos_base,
         num_rows="dynamic",
@@ -445,13 +451,19 @@ with tab_planilla:
                 width="medium",
                 options=OPCIONES_DIAMETROS,
                 required=True
-            )
+            ),
+            "Long_m": st.column_config.NumberColumn("Long_m", min_value=0.1, format="%.2f"),
+            "Cota_Terreno_DE": st.column_config.NumberColumn("Cota_Terreno_DE", format="%.4f"),
+            "Cota_Terreno_A": st.column_config.NumberColumn("Cota_Terreno_A", format="%.4f"),
+            "Cota_Fondo_DE": st.column_config.NumberColumn("Cota_Fondo_DE", format="%.4f"),
+            "Cota_Fondo_A": st.column_config.NumberColumn("Cota_Fondo_A", format="%.4f"),
         },
         key="editor_300_key"
     )
     
+    # Recalcular dinámicamente los IDs de los tramos si se agregan o eliminan filas
     df_edited['TRAMO_ID'] = [
-        f"T-{(idx + 1):03d} (C-{int(row['DE'])} a C-{int(row['A'])})"
+        f"T-{(idx + 1):03d} (C-{int(row['DE']) if pd.notna(row['DE']) else 0} a C-{int(row['A']) if pd.notna(row['A']) else 0})"
         for idx, row in df_edited.iterrows()
     ]
     
@@ -491,7 +503,7 @@ with tab_planilla:
         l_acum = 0.0
         q_inicio = 0.0
         for _, row in df_g.iterrows():
-            l_acum += float(row['Long_m'])
+            l_acum += float(row['Long_m']) if pd.notna(row['Long_m']) else 0.0
             res = calcular_hidraulica_tramo_completo(row, q_unitario, coef_erradas, coef_infilt, l_acum, q_inicio)
             q_inicio = float(res['CAUDAL TOTAL (L/s)'])
             resultados_lista.append(res)
@@ -517,9 +529,6 @@ with tab_planilla:
     
     df_solver_view = df_res_completo[columnas_solver_ver]
     
-    # CORRECCIÓN EN LA TABLA DEL SOLVER:
-    # Se utiliza .style.map(...) de manera robusta y compatible con Pandas moderno, asegurando 
-    # que las columnas estén presentes para evitar KeyError en subset.
     subset_cols = [c for c in ['VALIDACIÓN VELOCIDAD', 'VALIDACIÓN TENSIÓN TRACTIVA'] if c in df_solver_view.columns]
     
     df_res_styled = df_solver_view.style \
